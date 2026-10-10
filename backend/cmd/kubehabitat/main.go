@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,16 +30,36 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	go func() {
-		<-ctx.Done()
+	listener, err := net.Listen("tcp", *listen)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("KubeHabitat foundation listening on %s; Kubernetes disconnected; demo only", *listen)
+	if err := runServer(ctx, server, listener); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// runServer keeps the process alive while Shutdown drains active requests.
+func runServer(ctx context.Context, server *http.Server, listener net.Listener) error {
+	served := make(chan error, 1)
+	go func() { served <- server.Serve(listener) }()
+	select {
+	case err := <-served:
+		if err == http.ErrServerClosed {
+			return nil
+		}
+		return err
+	case <-ctx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Printf("shutdown: %v", err)
+			return err
 		}
-	}()
-	log.Printf("KubeHabitat foundation listening on %s; Kubernetes disconnected; demo only", *listen)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+		err := <-served
+		if err == http.ErrServerClosed {
+			return nil
+		}
+		return err
 	}
 }
