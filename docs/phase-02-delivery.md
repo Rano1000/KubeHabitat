@@ -13,6 +13,8 @@
 - Retained stale observations, browser retry/backoff and full resynchronization.
 - Server-side credential loading, minimal RBAC example and a custom architecture graphic.
 - Existing 3D demo, guided demo camera and animated Field guide preserved.
+- Reusable isolated kind lab, small workload fixtures, read-only credential generation and
+  explicit-context permission checks. See the [local test guide](local-test-cluster.md).
 
 ## Verification
 
@@ -21,14 +23,24 @@
 - TypeScript checking and the Vite production build pass; the lazy Three.js bundle retains its
   existing size warning.
 - Local documentation-link validation passes.
-- Browser checks are added but not verified locally: the Windows command sandbox prevents Chromium
-  installation/launch, and the in-app browser cannot reach the preview server. These environment
-  failures are not passing UI checks.
+- Manual in-app browser smoke review on 2026-10-10 verifies the compiled preview renders the 3D
+  house, selecting a demo container updates its inspector, and the Live cluster page explains that
+  discovery is disabled. The preview is launched from the user's regular Windows terminal.
+- Automated browser checks remain unverified locally: the Windows command sandbox prevents Chromium
+  installation/launch. Manual smoke review does not replace the complete browser suite.
+- Four local lab launcher tests pass with substituted native tools: help performs no operations, an
+  unowned cluster is not mutated, commands use explicit lab contexts and the backend receives only
+  observer credentials, and unexpected Secret access prevents backend launch. These checks do not
+  contact a Kubernetes cluster.
 - The GitHub integration rejects writes with `403 Resource not accessible by integration`.
   Publication and CI verification are pending.
 
 Real-cluster validation is still required: this workspace has no configured Kubernetes cluster. Fake
-Kubernetes clients validate adapter behavior; they are not a production-cluster test.
+Kubernetes clients validate adapter behavior; they are not a production-cluster test. The official
+kind v0.33.0 Windows tool was downloaded and its SHA-256 checksum verified. Docker's Linux engine is
+running in the user's session, but the agent command sandbox denies its named-pipe connection. The
+available permission tool cannot represent that device path. The prepared lab launcher must run in
+the user's regular terminal before real-cluster evidence can be recorded.
 
 ## Remaining gate
 

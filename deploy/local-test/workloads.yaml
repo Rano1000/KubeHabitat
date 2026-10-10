@@ -1,0 +1,36 @@
+# Small, real workloads for discovery testing. These do not generate application traffic.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: habitat-web
+  namespace: habitat-lab
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: habitat-web
+  template:
+    metadata:
+      labels:
+        app: habitat-web
+    spec:
+      automountServiceAccountToken: false
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: habitat-web
+      containers:
+        - name: web
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi

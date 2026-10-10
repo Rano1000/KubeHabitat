@@ -8,6 +8,9 @@ Phase 03; full lifecycle animation is Phase 04.
 
 ## Start locally
 
+If you do not have a cluster yet, the [local test lab](local-test-cluster.md) creates an isolated
+kind cluster and a read-only observer configuration.
+
 Keep the backend bound to localhost. Use a kubeconfig context whose permissions are restricted to
 `get`, `list`, and `watch` on nodes, namespaces and pods.
 

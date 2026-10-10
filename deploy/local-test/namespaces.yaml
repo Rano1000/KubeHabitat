@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubehabitat
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: habitat-lab
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab

@@ -52,6 +52,7 @@ serving expects an existing compiled `index.html`.
 ```bash
 # Repository root
 node scripts/check-doc-links.mjs
+node --test scripts/local-test-cluster.test.mjs
 
 cd backend
 gofmt -w cmd internal
@@ -110,6 +111,9 @@ Three.js cost, not a production performance budget. Measure and optimize represe
 sizes in Phase 08.
 
 ## Live discovery development
+
+For real integration checks, use the [local test cluster](local-test-cluster.md). It is reusable;
+ordinary unit and browser tests do not require creating a Kubernetes cluster each time.
 
 Follow the [live connection guide](live-connection.md) to opt into Kubernetes access. The backend
 defaults to demo mode and never loads credentials unless `-live` is specified. Browser tests use

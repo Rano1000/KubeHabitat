@@ -13,3 +13,4 @@ backend/bin/
 .idea/
 .vscode/
 coverage/
+.local/
