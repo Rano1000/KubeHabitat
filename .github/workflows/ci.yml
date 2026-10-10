@@ -2,8 +2,7 @@ name: Foundation checks
 
 on:
   push:
-    branches: [main, phase-01-foundation]
-  pull_request:
+    branches: [main]
 
 permissions:
   contents: read

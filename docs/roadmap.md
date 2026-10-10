@@ -2,22 +2,22 @@
 
 ![KubeHabitat target architecture](assets/architecture.svg)
 
-States: **Planned → In progress → In review → Verified → Complete**. Acceptance evidence and review
-are required before marking a phase complete. Dates and percentages wait until actual throughput
-supports estimates.
+States: **Planned → In progress → In review → Verified → Complete**. Acceptance evidence and
+validation are required before marking a phase complete. Dates and percentages wait until actual
+throughput supports estimates.
 
-| Phase | Outcome                                           | State     |
-| ----- | ------------------------------------------------- | --------- |
-| 00    | Vision, name, first logo, visual direction        | Agreed    |
-| 01    | Runnable foundation and contributor documentation | In review |
-| 02    | Read-only live Kubernetes connection              | Planned   |
-| 03    | Real cluster house and spatial navigation         | Planned   |
-| 04    | Accurate workload lifecycle animations            | Planned   |
-| 05    | Investigation and inspectable evidence            | Planned   |
-| 06    | Metrics, ownership, services, storage             | Planned   |
-| 07    | Optional observed traffic                         | Planned   |
-| 08    | History, scale, accessibility                     | Planned   |
-| 09    | Packaging, deployment, public release             | Planned   |
+| Phase | Outcome                                           | State    |
+| ----- | ------------------------------------------------- | -------- |
+| 00    | Vision, name, first logo, visual direction        | Agreed   |
+| 01    | Runnable foundation and contributor documentation | Verified |
+| 02    | Read-only live Kubernetes connection              | Planned  |
+| 03    | Real cluster house and spatial navigation         | Planned  |
+| 04    | Accurate workload lifecycle animations            | Planned  |
+| 05    | Investigation and inspectable evidence            | Planned  |
+| 06    | Metrics, ownership, services, storage             | Planned  |
+| 07    | Optional observed traffic                         | Planned  |
+| 08    | History, scale, accessibility                     | Planned  |
+| 09    | Packaging, deployment, public release             | Planned  |
 
 ## 01 · Foundation
 
@@ -31,11 +31,11 @@ resources explicitly disconnected from Kubernetes.
 - [x] Verify clean frontend install/build, backend tests/build/vet, and browser checks.
 - [x] Verify development proxy and compiled frontend served by Go.
 - [x] Validate contributor templates, Markdown links, and repository hygiene.
-- [ ] Publish the branch and complete review.
+- [x] Publish the foundation and verify GitHub CI.
 
 The checklist records progress, not production readiness. See the
-[Phase 01 delivery record](phase-01-delivery.md) for verification evidence. Maintainer review is
-still required.
+[Phase 01 delivery record](phase-01-delivery.md) for verification evidence. Development changes go
+directly to `main` until public release. Pull requests open after release.
 
 ## 02 · Live Kubernetes connection
 

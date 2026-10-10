@@ -3,7 +3,8 @@
 ![How observations become a visual story](docs/assets/architecture.svg)
 
 Thanks for helping make Kubernetes easier to understand. Contributions in engineering, visual
-design, Kubernetes modeling, documentation, and accessibility are welcome. Follow our
+design, Kubernetes modeling, documentation, and accessibility are welcome through issues during
+initial development. Pull requests will be accepted after the first public release. Follow our
 [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Find the right starting point
@@ -16,17 +17,17 @@ For a first contribution, consider a reproducible setup improvement, an accessib
 clarified visual label, or a focused rendering improvement. The project does not yet promise a
 populated `good first issue` queue.
 
-## Set up your fork
+## Development workflow before release
 
-1. Fork the repository on GitHub and clone your fork.
-2. Create a branch for one focused change.
-3. Follow the [development guide](docs/development.md) to run the service and browser.
-4. Preserve authored examples as demo data. Never commit kubeconfig, credentials, real cluster logs,
-   or Secret payloads.
+Maintainer development goes directly to `main`. Validate each focused change before committing and
+pushing, and check CI after publication. Pull requests are not required or accepted during this
+stage. Report bugs and propose ideas through issues.
 
-```bash
-git switch -c your-focused-change
-```
+Clone the repository and follow the [development guide](docs/development.md). Preserve authored
+examples as demo data. Never commit kubeconfig, credentials, real cluster logs, or Secret payloads.
+
+After the first public release, contributors will fork the repository, create a focused branch, and
+submit pull requests using the guidance below.
 
 Use Node.js 22.12+ and Go 1.27+. Install frontend dependencies with `npm ci`. A Kubernetes cluster
 is not needed for foundation work.
@@ -44,7 +45,7 @@ is not needed for foundation work.
 - Add dependencies only when they serve a concrete need. Commit lockfile changes with dependency
   changes.
 - Use `gofmt` for Go and follow existing TypeScript conventions. Avoid unrelated formatting or
-  refactoring in feature PRs.
+  refactoring in feature changes.
 - Update documentation when behavior or setup changes. Identify current versus planned
   functionality.
 
@@ -77,7 +78,7 @@ Add meaningful tests for behavior changes, especially identity, stale data, life
 resource selection, and accessibility. Documentation-only edits need link checks and visual review,
 rather than a new unit test for prose.
 
-## Open a pull request
+## Pull requests after release
 
 Describe the problem, resulting behavior, validation, and material limitations. Include screenshots
 for visual changes and explain the source behind visual state changes. Link an issue when one

@@ -83,11 +83,8 @@ git clone https://github.com/Rano1000/KubeHabitat.git
 cd KubeHabitat
 ```
 
-The foundation lives on `phase-01-foundation`; check out that branch after it is published:
-
-```bash
-git switch phase-01-foundation
-```
+Development happens directly on `main` until the first public release. Pull requests will open after
+release; see the [contributor guide](CONTRIBUTING.md).
 
 Start the backend:
 

@@ -1,7 +1,7 @@
 # Phase 01 · Delivery record
 
-**State:** In review. Implementation and local verification completed on 2026-10-10; maintainer
-review remains open.
+**State:** Verified. Implementation, local verification, and GitHub CI passed on 2026-10-10.
+Development is published directly to `main` before release; no pull request is required.
 
 ![Implemented Phase 01 cluster explorer with demo resources](assets/demo-explorer.png)
 
@@ -44,7 +44,7 @@ Browser coverage includes actual WebGL, disconnected semantics, keyboard/search 
 navigation, phase/readiness distinctions, reduced motion, narrow layout, unavailable backend,
 nested-container picking, and failed-WebGL inspection.
 
-## Limits and remaining review
+## Limits
 
 - Resources are authored examples. No Kubernetes connection, update stream, telemetry, incident
   history, or root-cause diagnosis exists yet.
@@ -57,7 +57,8 @@ nested-container picking, and failed-WebGL inspection.
 - Chromium's three missing libraries were downloaded/extracted into temporary storage for QA. No
   system-library installation was completed; normal setup is documented in the development guide.
 - Browser checks cover Chromium, not a full multi-browser or assistive-technology audit.
-- Remote CI and maintainer review must be checked on the PR before marking this phase Complete.
+- [GitHub CI passed](https://github.com/Rano1000/KubeHabitat/actions/runs/38050563573), including
+  the Go race check. Future changes publish directly to `main` and must pass CI.
 
 ## Next phase
 

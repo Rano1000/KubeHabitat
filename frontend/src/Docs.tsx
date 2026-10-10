@@ -8,7 +8,7 @@ const phases = [
   [
     '01',
     'Foundation',
-    'In review',
+    'Verified',
     'Runnable shell, API status, contributor guides, build checks, and this demo.',
   ],
   [
@@ -195,27 +195,27 @@ export function Docs() {
             ))}
           </div>
           <p>
-            Progress is backed by acceptance criteria and verification. Phase 01 is awaiting review
-            until its review and checks are complete.
+            Progress is backed by acceptance criteria and verification. Phase 01 passed local checks
+            and GitHub CI. Development changes go directly to main until release.
           </p>
         </section>
         <section className="doc-card wide">
           <span className="eyebrow">06 / MAKE A CONTRIBUTION</span>
           <h2>Help make Kubernetes visible.</h2>
           <p>
-            Start with the contributor guide, choose a focused issue, and explain both the behavior
-            and its evidence. Contributions in code, Kubernetes modeling, documentation,
-            accessibility, and visual design are welcome.
+            Read the contributor guide and use issues to report bugs or propose ideas. Maintainer
+            development goes directly to main before release. Pull requests will open after the
+            first public release.
           </p>
           <a
             className="text-link"
-            href="https://github.com/Rano1000/KubeHabitat/blob/phase-01-foundation/CONTRIBUTING.md"
+            href="https://github.com/Rano1000/KubeHabitat/blob/main/CONTRIBUTING.md"
             target="_blank"
             rel="noreferrer"
           >
             Read the contributor guide ↗
           </a>
-          <span className="link-note">Read the source guide on the foundation branch.</span>
+          <span className="link-note">Read the source guide on main.</span>
         </section>
       </div>
     </main>
