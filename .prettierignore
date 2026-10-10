@@ -1,0 +1,11 @@
+node_modules
+dist
+test-results
+playwright-report
+backend
+LICENSE
+NOTICE
+frontend/package-lock.json
+.agents
+.aws
+.codex

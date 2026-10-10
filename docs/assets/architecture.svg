@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="350" viewBox="0 0 1200 350" role="img" aria-labelledby="title desc">
+  <title id="title">KubeHabitat target architecture</title><desc id="desc">Kubernetes observations flow through a read-only Go cache and a snapshot plus update stream to the browser scene and inspector. Only the disconnected foundation API is implemented in Phase 01.</desc>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#152d3b"/><stop offset="1" stop-color="#0b1220"/></linearGradient><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#72d8cd"/></marker></defs>
+  <rect width="1200" height="350" rx="18" fill="url(#bg)"/>
+  <g font-family="system-ui,sans-serif"><text x="40" y="46" fill="#7be0d4" font-size="12" letter-spacing="3">KUBEHABITAT / OBSERVATIONS TO UNDERSTANDING</text><text x="40" y="85" fill="#e3edf8" font-size="28">A visual story, grounded in evidence.</text>
+  <g stroke="#3d5d72" fill="#182c40"><rect x="40" y="126" width="245" height="123" rx="9"/><rect x="332" y="126" width="245" height="123" rx="9"/><rect x="624" y="126" width="245" height="123" rx="9"/><rect x="916" y="126" width="245" height="123" rx="9"/></g>
+  <g stroke="#72d8cd" stroke-width="2" marker-end="url(#arrow)"><path d="M293 187H322"/><path d="M585 187H614"/><path d="M877 187H906"/></g>
+  <g font-size="18" fill="#e3edf8"><text x="60" y="176">Kubernetes API</text><text x="352" y="176">Read-only Go cache</text><text x="644" y="176">Snapshot + updates</text><text x="936" y="176">Scene + inspector</text></g>
+  <g font-size="12" fill="#b2c5d8"><text x="60" y="207">Objects · conditions · events</text><text x="352" y="207">UIDs · relationships · freshness</text><text x="644" y="207">Recovery · gaps · provenance</text><text x="936" y="207">Select · focus · inspect</text></g>
+  <text x="40" y="293" fill="#f5c37a" font-size="13">TARGET ARCHITECTURE · Cluster adapter and update stream start in Phase 02.</text><text x="40" y="319" fill="#a0afc2" font-size="12">Phase 01 implements the browser demo, health and disconnected-status API, and optional static serving.</text></g>
+</svg>

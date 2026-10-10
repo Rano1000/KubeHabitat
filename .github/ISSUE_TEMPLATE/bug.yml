@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a reproducible problem in KubeHabitat.
+title: '[Bug]: '
+body:
+  - type: markdown
+    attributes:
+      value:
+        'For security issues, follow SECURITY.md. Do not include credentials or private cluster
+        data.'
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      placeholder: 'Commit SHA, branch, or release'
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description:
+        'Include browser, OS, and whether you used the demo or a future live integration.'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description:
+        'Screenshots, relevant errors, or sanitized observations. Clearly label authored examples.'

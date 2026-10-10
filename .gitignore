@@ -1,0 +1,14 @@
+node_modules/
+frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
+backend/bin/
+/backend/kubehabitat
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.idea/
+.vscode/
+coverage/
