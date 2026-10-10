@@ -4,6 +4,11 @@
 
 ## Current foundation
 
+Phase 02 extends this foundation with opt-in live discovery. See
+[Live connection](live-connection.md) for the implemented contract and trust boundary. The
+foundation description below records the separate authored demo; it does not describe the live
+inventory.
+
 React, TypeScript, and Vite provide the browser shell. A lazy-loaded React Three Fiber scene renders
 the house, example nodes and pods, and nested containers. The inventory and inspector are ordinary
 HTML and do not depend on WebGL.
@@ -35,6 +40,11 @@ static HTML. No permissive CORS headers are set. Vite supplies a same-origin dev
 | `-static-dir` | Empty            | Compiled directory with `index.html`; empty runs API-only mode |
 
 ## Target live architecture
+
+Nodes, namespaces, pods and derived containers are now implemented in `backend/internal/cluster`.
+`GET /api/v1/snapshot` sends full cache snapshots with session ID, revision and per-kind visibility.
+The Live cluster tab polls every two seconds and retains stale observations on failure. The 3D
+Habitat tab still uses demo fixtures; Phase 03 connects the real layout.
 
 Phase 02 introduces a Kubernetes adapter using Go `client-go` shared informers and a cache. Initial
 discovery covers nodes, namespaces, and pods; containers derive from pod specifications and status.

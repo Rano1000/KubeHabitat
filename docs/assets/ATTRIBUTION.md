@@ -12,6 +12,9 @@ KubeHabitat’s first visual identity was selected by the project maintainer dur
 | `roadmap-concept.png`                        | AI-generated planning illustration                             | Reference artwork; the written roadmap is authoritative                              |
 | `architecture.svg`                           | Original source-authored KubeHabitat diagram                   | Accessible target-architecture overview                                              |
 
+`live-discovery.svg` is an original source-authored diagram of the implemented read-only discovery
+and credential boundary.
+
 Source-authored diagrams are covered by the repository’s Apache-2.0 license. Generated artwork is
 available under the same license to the extent of the project’s rights. Third-party marks remain
 subject to their owners’ rights. KubeHabitat is not an official Kubernetes project.

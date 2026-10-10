@@ -1,0 +1,54 @@
+// Package cluster projects read-only Kubernetes observations into a credential-free API.
+package cluster
+
+import "time"
+
+type Condition struct {
+	Type   string `json:"type"`
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// Resource contains only the fields needed for inventory and visual state.
+// Pod specs, environment variables, annotations, and Secret payloads are never serialized.
+type Resource struct {
+	ID              string      `json:"id"`
+	UID             string      `json:"uid"`
+	Kind            string      `json:"kind"`
+	Name            string      `json:"name"`
+	Namespace       string      `json:"namespace,omitempty"`
+	NodeName        string      `json:"nodeName,omitempty"`
+	Parent          string      `json:"parent,omitempty"`
+	ResourceVersion string      `json:"resourceVersion"`
+	ObservedAt      time.Time   `json:"observedAt"`
+	Phase           string      `json:"phase,omitempty"`
+	State           string      `json:"state"`
+	Ready           *bool       `json:"ready,omitempty"`
+	RestartCount    *int32      `json:"restartCount,omitempty"`
+	ContainerType   string      `json:"containerType,omitempty"`
+	Reason          string      `json:"reason,omitempty"`
+	ExitCode        *int32      `json:"exitCode,omitempty"`
+	Deleting        bool        `json:"deleting,omitempty"`
+	Conditions      []Condition `json:"conditions,omitempty"`
+}
+
+type Visibility struct {
+	Kind        string     `json:"kind"`
+	State       string     `json:"state"`
+	Synced      bool       `json:"synced"`
+	LastSuccess *time.Time `json:"lastSuccess,omitempty"`
+	Reason      string     `json:"reason,omitempty"`
+}
+
+// Snapshot is a full cache replacement, not an incident history or an incremental patch.
+type Snapshot struct {
+	SchemaVersion int          `json:"schemaVersion"`
+	SessionID     string       `json:"sessionId"`
+	Revision      uint64       `json:"revision"`
+	GeneratedAt   time.Time    `json:"generatedAt"`
+	DataSource    string       `json:"dataSource"`
+	Cluster       string       `json:"cluster"`
+	Connection    string       `json:"connection"`
+	Visibility    []Visibility `json:"visibility"`
+	Resources     []Resource   `json:"resources"`
+}

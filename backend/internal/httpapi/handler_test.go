@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Rano1000/KubeHabitat/backend/internal/cluster"
 )
 
 func TestDisconnectedStatusAndReadOnlyBoundary(t *testing.T) {
@@ -24,12 +26,40 @@ func TestDisconnectedStatusAndReadOnlyBoundary(t *testing.T) {
 		t.Fatalf("foundation must not imply live connectivity: %d %+v", w.Code, status)
 	}
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
-		for _, path := range []string{"/healthz", "/api/v1/status", "/"} {
+		for _, path := range []string{"/healthz", "/api/v1/status", "/api/v1/snapshot", "/"} {
 			w = httptest.NewRecorder()
 			handler.ServeHTTP(w, httptest.NewRequest(method, path, nil))
 			if w.Code != http.StatusMethodNotAllowed {
 				t.Errorf("%s %s accepted: %d", method, path, w.Code)
 			}
+		}
+	}
+}
+
+func TestLiveSnapshotNeverSubstitutesDemoData(t *testing.T) {
+	for _, live := range []bool{false, true} {
+		var store *cluster.Store
+		if live {
+			store = cluster.NewStore("test")
+		}
+		handler, err := NewHandlerWithCluster("", store)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/snapshot", nil))
+		if !live {
+			if w.Code != http.StatusConflict {
+				t.Fatalf("disabled snapshot returned %d", w.Code)
+			}
+			continue
+		}
+		var snapshot cluster.Snapshot
+		if err := json.Unmarshal(w.Body.Bytes(), &snapshot); err != nil {
+			t.Fatal(err)
+		}
+		if w.Code != http.StatusOK || snapshot.DataSource != "kubernetes" || snapshot.Connection != "disconnected" || len(snapshot.Resources) != 0 || len(snapshot.Visibility) != 3 {
+			t.Fatalf("initial snapshot invented a connected cluster: %+v", snapshot)
 		}
 	}
 }

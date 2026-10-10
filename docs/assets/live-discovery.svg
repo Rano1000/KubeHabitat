@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 340" role="img" aria-labelledby="title desc">
+  <title id="title">KubeHabitat live discovery and trust boundary</title>
+  <desc id="desc">Nodes, namespaces and pods are watched by the backend. Only projected observations reach the browser; containers derive from pods. Credentials and Secret payloads stay outside the browser.</desc>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#122e43"/><stop offset="1" stop-color="#0b1423"/></linearGradient></defs>
+  <rect width="1000" height="340" rx="20" fill="url(#bg)"/>
+  <g font-family="system-ui,sans-serif">
+    <text x="34" y="43" fill="#7be0d4" font-size="13" letter-spacing="3">KUBEHABITAT / LIVE DISCOVERY</text>
+    <text x="34" y="77" fill="#edf5ff" font-size="25" font-weight="700">An observation becomes an inspectable component.</text>
+    <g fill="#162c40" stroke="#345b71"><rect x="34" y="114" width="265" height="139" rx="13"/><rect x="367" y="114" width="265" height="139" rx="13"/><rect x="700" y="114" width="265" height="139" rx="13"/></g>
+    <g fill="#edf5ff" font-size="18" font-weight="700"><text x="57" y="148">Kubernetes API</text><text x="390" y="148">Read-only backend</text><text x="723" y="148">Browser inventory</text></g>
+    <g fill="#adc1d5" font-size="14"><text x="57" y="181">Nodes · Namespaces · Pods</text><text x="57" y="208">List + watch, never mutations</text><text x="390" y="181">Shared informers → projection</text><text x="390" y="208">UID · revision · visibility</text><text x="723" y="181">Full snapshots every 2 seconds</text><text x="723" y="208">Containers derive from pods</text></g>
+    <g stroke="#7be0d4" stroke-width="2" fill="none"><path d="M311 181h44m-9-7 9 7-9 7"/><path d="M644 181h44m-9-7 9 7-9 7"/></g>
+    <text x="34" y="291" fill="#f5c382" font-size="13">BACKEND TRUST BOUNDARY</text><text x="267" y="291" fill="#adc1d5" font-size="13">Kubeconfig stays server-side · No Secret API · No pod environment variables in responses</text>
+  </g>
+</svg>

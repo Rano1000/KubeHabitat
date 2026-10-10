@@ -1,4 +1,4 @@
-// Package httpapi exposes the Phase 01 foundation contract. It has no cluster client.
+// Package httpapi exposes read-only status, inventory, and static browser assets.
 package httpapi
 
 import (
@@ -8,9 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Rano1000/KubeHabitat/backend/internal/cluster"
 )
 
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 // Status makes backend availability independent of Kubernetes connectivity.
 type Status struct {
@@ -22,15 +24,31 @@ type Status struct {
 }
 
 func NewHandler(staticDir string) (http.Handler, error) {
+	return NewHandlerWithCluster(staticDir, nil)
+}
+
+func NewHandlerWithCluster(staticDir string, store *cluster.Store) (http.Handler, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 	mux.HandleFunc("GET /api/v1/status", func(w http.ResponseWriter, r *http.Request) {
+		if store != nil {
+			snapshot := store.Snapshot()
+			writeJSON(w, http.StatusOK, Status{Service: "kubehabitat", Version: Version, Connection: snapshot.Connection, DataSource: "kubernetes", Message: "Read-only live discovery. Check visibility for resource-specific freshness and permissions."})
+			return
+		}
 		writeJSON(w, http.StatusOK, Status{
 			Service: "kubehabitat", Version: Version, Connection: "disconnected", DataSource: "demo",
 			Message: "Phase 01 foundation. No Kubernetes client is configured. Resources are local demo fixtures.",
 		})
+	})
+	mux.HandleFunc("GET /api/v1/snapshot", func(w http.ResponseWriter, r *http.Request) {
+		if store == nil {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "Live discovery is disabled. Start the backend with -live; demo fixtures are never returned by this endpoint."})
+			return
+		}
+		writeJSON(w, http.StatusOK, store.Snapshot())
 	})
 	var files http.Handler
 	if staticDir != "" {

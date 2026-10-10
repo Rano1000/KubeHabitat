@@ -8,8 +8,8 @@ Node.js 22.12+, npm, Go 1.27+, and Git. WebGL is needed for the 3D view; the inv
 still work when rendering fails. Phase 01 requires no Kubernetes cluster or credentials.
 
 Use `.node-version` to align the Node development version. The checked-in
-`frontend/package-lock.json` controls dependency resolution. The Go module uses only the standard
-library.
+`frontend/package-lock.json` controls frontend dependency resolution. The Go module pins Kubernetes
+client libraries in `go.mod` and `go.sum`.
 
 ## Start development
 
@@ -108,3 +108,19 @@ clearly identified.
 The large scene bundle is lazy-loaded separately from the interface. It is an expected initial
 Three.js cost, not a production performance budget. Measure and optimize representative cluster
 sizes in Phase 08.
+
+## Live discovery development
+
+Follow the [live connection guide](live-connection.md) to opt into Kubernetes access. The backend
+defaults to demo mode and never loads credentials unless `-live` is specified. Browser tests use
+authored HTTP responses; adapter tests use fake Kubernetes clients. A production Kubernetes cluster
+is not required for these automated checks.
+
+`backend/internal/cluster` implements informers, projection and freshness. The live browser
+interface is in `frontend/src/LiveInventory.tsx`; its snapshot contract/recovery logic is in
+`frontend/src/useClusterSnapshot.ts`. Real-cluster spatial placement is Phase 03.
+
+Browser checks can use an installed Chromium-compatible executable by setting
+`KUBEHABITAT_BROWSER_EXECUTABLE`. If the default ports are occupied, set `KUBEHABITAT_API_PORT` and
+`KUBEHABITAT_DEV_PORT` for the test run; defaults remain 8080 and 5173. The Vite proxy uses the same
+API port variable. These settings do not change Kubernetes permissions.

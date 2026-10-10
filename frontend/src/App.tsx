@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Docs } from './Docs'
+import { LiveInventory } from './LiveInventory'
 import { isWarning, kinds, resources } from './demo'
 import type { ResourceKind } from './demo'
 import { SceneBoundary } from './SceneBoundary'
@@ -10,7 +11,13 @@ const HabitatScene = lazy(() =>
 )
 
 export function App() {
-  const [view, setView] = useState(window.location.hash === '#docs' ? 'docs' : 'habitat')
+  const [view, setView] = useState(
+    window.location.hash === '#docs'
+      ? 'docs'
+      : window.location.hash === '#live'
+        ? 'live'
+        : 'habitat',
+  )
   const [kind, setKind] = useState<ResourceKind | 'All'>('All')
   const [selected, setSelected] = useState<string | null>(null)
   const [focusRevision, setFocusRevision] = useState(0)
@@ -33,7 +40,14 @@ export function App() {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     const update = () => setReducedMotion(media.matches)
     media.addEventListener('change', update)
-    const changeView = () => setView(window.location.hash === '#docs' ? 'docs' : 'habitat')
+    const changeView = () =>
+      setView(
+        window.location.hash === '#docs'
+          ? 'docs'
+          : window.location.hash === '#live'
+            ? 'live'
+            : 'habitat',
+      )
     window.addEventListener('hashchange', changeView)
     return () => {
       media.removeEventListener('change', update)
@@ -64,6 +78,9 @@ export function App() {
           <a href="#docs" aria-current={view === 'docs' ? 'page' : undefined}>
             Field guide
           </a>
+          <a href="#live" aria-current={view === 'live' ? 'page' : undefined}>
+            Live cluster
+          </a>
           <a href="https://github.com/Rano1000/KubeHabitat" target="_blank" rel="noreferrer">
             GitHub ↗
           </a>
@@ -77,20 +94,30 @@ export function App() {
             {paused ? 'Resume animations' : 'Pause animations'}
           </button>
         )}
-        <span className="phase-label">PHASE 01 / FOUNDATION</span>
+        <span className="phase-label">PHASE 02 / LIVE DISCOVERY</span>
       </header>
-      <div className="demo-banner">
-        <span className="demo-tag">DEMO</span>
-        <p>Illustrative resources. Kubernetes is not connected.</p>
-        <span className="backend-status" role="status">
-          <span className={`signal-dot ${backend.available ? 'ready' : 'unknown'}`} />
-          {backend.available
-            ? 'Backend available · cluster disconnected'
-            : 'Backend unavailable · local demo only'}
-        </span>
-      </div>
+      {view !== 'live' && (
+        <div className="demo-banner">
+          <span className="demo-tag">DEMO</span>
+          <p>
+            {backend.status?.dataSource === 'kubernetes'
+              ? 'Authored demo house. Use Live cluster for Kubernetes observations.'
+              : 'Illustrative resources. Kubernetes is not connected.'}
+          </p>
+          <span className="backend-status" role="status">
+            <span className={`signal-dot ${backend.available ? 'ready' : 'unknown'}`} />
+            {backend.available
+              ? backend.status?.dataSource === 'kubernetes'
+                ? `Backend available · cluster ${backend.status.connection}`
+                : 'Backend available · cluster disconnected'
+              : 'Backend unavailable · local demo only'}
+          </span>
+        </div>
+      )}
       {view === 'docs' ? (
         <Docs />
+      ) : view === 'live' ? (
+        <LiveInventory />
       ) : (
         <main id="main-content" className="explorer">
           <section className="explorer-intro">

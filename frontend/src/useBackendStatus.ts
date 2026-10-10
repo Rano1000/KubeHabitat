@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 export type BackendStatus = {
   service: string
   version: string
-  connection: 'disconnected'
-  dataSource: 'demo'
+  connection: 'disconnected' | 'connected' | 'partial'
+  dataSource: 'demo' | 'kubernetes'
   message: string
 }
 export function useBackendStatus() {
@@ -25,9 +25,9 @@ export function useBackendStatus() {
           !value ||
           typeof value !== 'object' ||
           !('connection' in value) ||
-          value.connection !== 'disconnected' ||
+          !['disconnected', 'connected', 'partial'].includes(String(value.connection)) ||
           !('dataSource' in value) ||
-          value.dataSource !== 'demo' ||
+          !['demo', 'kubernetes'].includes(String(value.dataSource)) ||
           !('service' in value) ||
           value.service !== 'kubehabitat' ||
           !('version' in value) ||

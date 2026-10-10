@@ -6,18 +6,18 @@ States: **Planned → In progress → In review → Verified → Complete**. Acc
 validation are required before marking a phase complete. Dates and percentages wait until actual
 throughput supports estimates.
 
-| Phase | Outcome                                           | State    |
-| ----- | ------------------------------------------------- | -------- |
-| 00    | Vision, name, first logo, visual direction        | Agreed   |
-| 01    | Runnable foundation and contributor documentation | Verified |
-| 02    | Read-only live Kubernetes connection              | Planned  |
-| 03    | Real cluster house and spatial navigation         | Planned  |
-| 04    | Accurate workload lifecycle animations            | Planned  |
-| 05    | Investigation and inspectable evidence            | Planned  |
-| 06    | Metrics, ownership, services, storage             | Planned  |
-| 07    | Optional observed traffic                         | Planned  |
-| 08    | History, scale, accessibility                     | Planned  |
-| 09    | Packaging, deployment, public release             | Planned  |
+| Phase | Outcome                                           | State     |
+| ----- | ------------------------------------------------- | --------- |
+| 00    | Vision, name, first logo, visual direction        | Agreed    |
+| 01    | Runnable foundation and contributor documentation | Verified  |
+| 02    | Read-only live Kubernetes connection              | In review |
+| 03    | Real cluster house and spatial navigation         | Planned   |
+| 04    | Accurate workload lifecycle animations            | Planned   |
+| 05    | Investigation and inspectable evidence            | Planned   |
+| 06    | Metrics, ownership, services, storage             | Planned   |
+| 07    | Optional observed traffic                         | Planned   |
+| 08    | History, scale, accessibility                     | Planned   |
+| 09    | Packaging, deployment, public release             | Planned   |
 
 ## 01 · Foundation
 
@@ -38,6 +38,11 @@ The checklist records progress, not production readiness. See the
 directly to `main` until public release. Pull requests open after release.
 
 ## 02 · Live Kubernetes connection
+
+Implementation and automated verification are tracked in the
+[Phase 02 delivery record](phase-02-delivery.md). See the
+[live connection guide](live-connection.md) for setup. Real-cluster validation remains required
+before closing the phase.
 
 Read-only shared informers/cache for nodes, namespaces, pods, and derived containers. Design a
 snapshot/update contract with identity, freshness, and recovery.

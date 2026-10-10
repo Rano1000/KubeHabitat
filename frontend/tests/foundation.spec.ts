@@ -18,7 +18,9 @@ test('demo stays honest while the API and development proxy are available', asyn
       }),
     )
     .toBe(true)
-  const proxy = await request.get('http://127.0.0.1:5173/api/v1/status')
+  const proxy = await request.get(
+    `http://127.0.0.1:${process.env.KUBEHABITAT_DEV_PORT ?? 5173}/api/v1/status`,
+  )
   expect(proxy.ok()).toBe(true)
   expect(await proxy.json()).toMatchObject({ connection: 'disconnected', dataSource: 'demo' })
   const missing = await request.get('/api/v1/not-implemented')

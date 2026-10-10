@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-6acfc0" /></a>
-  <img alt="Status: Phase 01 foundation" src="https://img.shields.io/badge/status-Phase%2001%20foundation-7d9bd3" />
+  <img alt="Status: Phase 02 live discovery" src="https://img.shields.io/badge/status-Phase%2002%20live%20discovery-7d9bd3" />
   <a href="CONTRIBUTING.md"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-6acfc0" /></a>
 </p>
 
@@ -49,8 +49,10 @@ and the limits of the metaphor.
 
 ## Current status
 
-**Phase 01 foundation — demo data only.** This version does not connect to Kubernetes, monitor real
-workloads, collect metrics or logs, or diagnose incidents.
+**Phase 02 — live discovery implemented, real-cluster verification pending.** The Live cluster tab
+connects to opt-in read-only Kubernetes discovery. The Habitat tab remains the authored 3D demo;
+Phase 03 will generate the house from live objects. Metrics, logs and incident diagnosis are
+planned.
 
 Available in this branch:
 
@@ -61,11 +63,17 @@ Available in this branch:
 - Pause controls, reduced-motion support, and HTML inspection when the scene is unavailable.
 - An animated field guide with the mental model, setup instructions, target architecture, and
   roadmap.
-- Go health and disconnected-status endpoints; optional serving of the compiled frontend.
+- Go health/status and live snapshot endpoints; optional serving of the compiled frontend.
+- Read-only shared informers for nodes, namespaces and pods, with derived containers.
+- A live inventory and condition inspector with per-kind permissions, freshness and recovery.
 - Contributor guides and automated build, API, browser, and documentation checks.
 
-Live connectivity starts in **Phase 02**. Real lifecycle visualization, investigation, metrics,
-storage, traffic, and deployment packaging follow the [roadmap](docs/roadmap.md).
+See the [live connection guide](docs/live-connection.md) and
+[Phase 02 delivery record](docs/phase-02-delivery.md). Real-cluster 3D generation, lifecycle
+visualization, investigation, metrics, storage, traffic and packaging follow the
+[roadmap](docs/roadmap.md).
+
+![Read-only live discovery architecture](docs/assets/live-discovery.svg)
 
 ## Get started
 
@@ -74,7 +82,8 @@ storage, traffic, and deployment packaging follow the [roadmap](docs/roadmap.md)
 - **Node.js 22.12+** and npm. The development version is recorded in [.node-version](.node-version).
 - **Go 1.27+**, installed from [go.dev](https://go.dev/doc/install).
 - A WebGL-capable browser for the scene. The inventory and inspector provide a text alternative.
-- Git. A Kubernetes cluster is **not required** for Phase 01.
+- Git. A Kubernetes cluster is **not required** for the demo; live discovery requires a read-only
+  context.
 
 ### Development
 

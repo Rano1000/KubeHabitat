@@ -14,7 +14,7 @@ const phases = [
   [
     '02',
     'Kubernetes connection',
-    'Planned',
+    'In review',
     'Read-only informers, stable object identities, freshness, and recovery.',
   ],
   [
@@ -65,7 +65,7 @@ export function Docs() {
   return (
     <main className="docs-page" id="main-content">
       <div className="docs-heading">
-        <span className="eyebrow">THE FIELD GUIDE · PHASE 01</span>
+        <span className="eyebrow">THE FIELD GUIDE · LIVE DISCOVERY</span>
         <h1>Understand the habitat.</h1>
         <p>
           A contributor’s introduction to the world we’re building, the evidence behind it, and the
@@ -73,6 +73,28 @@ export function Docs() {
         </p>
       </div>
       <div className="docs-grid">
+        <section className="doc-card wide">
+          <span className="eyebrow">LIVE CONNECTION / PHASE 02</span>
+          <h2>Connect a read-only context.</h2>
+          <p>
+            Start the backend with live discovery enabled. Credentials stay server-side. The live
+            inventory shows permissions, synchronization and freshness for each supported kind.
+          </p>
+          <pre>
+            <code>
+              {
+                'cd backend\ngo run ./cmd/kubehabitat -live -context YOUR_READ_ONLY_CONTEXT\n\n# Open the app, then select Live cluster'
+              }
+            </code>
+          </pre>
+          <a href="#live" className="primary-link">
+            Open the live inventory →
+          </a>
+          <p>
+            The Habitat tab remains an authored demo. Live cluster house generation is Phase 03.
+            Services, storage, metrics and observed traffic follow their roadmap phases.
+          </p>
+        </section>
         <section className="doc-card wide">
           <span className="eyebrow">01 / THE MENTAL MODEL</span>
           <h2>One cluster. A house of moving parts.</h2>
@@ -103,7 +125,7 @@ export function Docs() {
         </section>
         <section className="doc-card">
           <span className="eyebrow">02 / GET STARTED</span>
-          <h2>Run the foundation.</h2>
+          <h2>Run your habitat.</h2>
           <p>
             Use Node.js 22.12+ and Go 1.27+. Start the backend and frontend in separate terminals.
           </p>
@@ -146,37 +168,38 @@ export function Docs() {
             </li>
           </ul>
           <p>
-            Phase 01 has no cluster connection, telemetry, failure history, or automatic diagnosis.
+            The Habitat tab uses authored demo resources. Live cluster shows read-only Kubernetes
+            observations. Telemetry, failure history and automatic diagnosis are not implemented.
           </p>
         </section>
         <section className="doc-card wide">
-          <span className="eyebrow">04 / HOW DATA WILL TRAVEL</span>
+          <span className="eyebrow">04 / HOW DATA TRAVELS</span>
           <h2>Observed state becomes a visual story.</h2>
           <div className="flow-diagram">
             {[
               'Kubernetes API',
               'Read-only Go cache',
-              'Snapshot + updates',
-              '3D scene + details',
+              'Full snapshots',
+              'Live inventory + details',
             ].map((label, index) => (
               <div className="flow-step" key={label}>
                 <small>0{index + 1}</small>
                 <strong>{label}</strong>
                 <span>
                   {index === 0
-                    ? 'Conditions & events'
+                    ? 'Nodes, namespaces & pods'
                     : index === 1
                       ? 'UIDs & freshness'
                       : index === 2
-                        ? 'Planned in Phase 02'
+                        ? 'Poll · retry · resynchronize'
                         : 'Evidence you can inspect'}
                 </span>
               </div>
             ))}
           </div>
           <p>
-            This is the target architecture. The current backend exposes health and disconnected
-            status only.
+            Phase 02 connects observations to the live inventory. Phase 03 will generate the house
+            from those same objects. Credentials stay on the backend; containers derive from pods.
           </p>
         </section>
         <section className="doc-card wide">

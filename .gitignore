@@ -4,6 +4,7 @@ frontend/playwright-report/
 frontend/test-results/
 backend/bin/
 /backend/kubehabitat
+/backend/kubehabitat.exe
 .env
 .env.*
 !.env.example

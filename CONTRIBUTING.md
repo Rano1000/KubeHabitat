@@ -10,8 +10,9 @@ initial development. Pull requests will be accepted after the first public relea
 ## Find the right starting point
 
 Read the [product specification](docs/product-spec.md), [architecture](docs/architecture.md), and
-[roadmap](docs/roadmap.md). Phase 01 is an authored demo with no cluster connection. Keep
-improvements within a clearly described phase or discuss a larger proposal in an issue first.
+[roadmap](docs/roadmap.md). The Habitat tab is an authored demo; the Live cluster tab uses read-only
+discovery described in the [live connection guide](docs/live-connection.md). Keep improvements
+within a clearly described phase or discuss a larger proposal in an issue first.
 
 For a first contribution, consider a reproducible setup improvement, an accessibility issue, a
 clarified visual label, or a focused rendering improvement. The project does not yet promise a
