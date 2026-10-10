@@ -9,6 +9,16 @@ const LiveHabitatScene = lazy(() =>
   import('./LiveHabitatScene').then((module) => ({ default: module.LiveHabitatScene })),
 )
 const emptyResources: LiveResource[] = []
+const kindLabels: Partial<Record<LiveKind, string>> = {
+  Ingress: 'Ingresses',
+  NetworkPolicy: 'Network policies',
+  StorageClass: 'Storage classes',
+  EndpointSlice: 'Endpoint slices',
+  PersistentVolumeClaim: 'PVCs',
+  PersistentVolume: 'PVs',
+  ResourceQuota: 'Quotas',
+  Volume: 'Pod volumes',
+}
 
 function warning(r: LiveResource) {
   return (
@@ -134,7 +144,9 @@ export function LiveInventory() {
                 ? 'Awaiting current observations'
                 : snapshot?.connection === 'connected'
                   ? 'Connected'
-                  : 'Partial visibility'}
+                  : snapshot?.connection === 'disconnected'
+                    ? 'Cluster API disconnected'
+                    : 'Partial visibility'}
           </strong>
         </div>
         <span>
@@ -273,7 +285,7 @@ export function LiveInventory() {
                   setFocusRevision((n) => n + 1)
                 }}
               >
-                {k === 'All' ? 'Everything' : `${k}s`}
+                {k === 'All' ? 'Everything' : (kindLabels[k] ?? `${k}s`)}
                 <span>
                   {k === 'All' ? resources.length : resources.filter((r) => r.kind === k).length}
                 </span>
@@ -407,7 +419,9 @@ export function LiveInventory() {
           <div className="live-scene-counts" role="status">
             {layout.rooms.length} node rooms · {layout.pods.length} pods ·{' '}
             {resources.filter((r) => r.kind === 'Container').length} containers
-            {live.stale && snapshot ? ' · retained observations; health unknown' : ''}
+            {snapshot && (live.stale || snapshot.connection !== 'connected')
+              ? ' · some observations retained; check freshness'
+              : ''}
           </div>
           <div className="scene-footer">
             <div className="scene-legend">
@@ -590,6 +604,25 @@ export function LiveInventory() {
                   </div>
                 )}
               </dl>
+              {current.kind === 'Pod' && (
+                <section className="relationship-list">
+                  <h4>Inside this pod</h4>
+                  {resources
+                    .filter((r) => r.parent === current.id)
+                    .map((child) => (
+                      <div key={child.id}>
+                        <small>
+                          {child.kind}
+                          {child.containerType ? ` · ${child.containerType}` : ''} ·{' '}
+                          {fresh(child) ? child.state : 'Unknown freshness'}
+                        </small>
+                        <button className="text-link" onClick={() => select(child.id)}>
+                          {child.name}
+                        </button>
+                      </div>
+                    ))}
+                </section>
+              )}
               {current.details && Object.keys(current.details).length > 0 && (
                 <section className="resource-values">
                   <h4>Observed configuration</h4>

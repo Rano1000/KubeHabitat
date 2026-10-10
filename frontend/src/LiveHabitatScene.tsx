@@ -168,7 +168,17 @@ function CameraRig({ layout, selected, matching, focusRevision, motion }: Props)
   const destination = useRef(new Vector3())
   const target = useRef(new Vector3())
   const selectedResource = layout.resources.find((r) => r.id === selected)
-  const focusIds = selected ? [...sceneHighlights(layout, selected, [])] : matching
+  const selectedPod = layout.pods.find(
+    (pod) =>
+      pod.resource.id === selected ||
+      (selectedResource?.kind === 'Container' && selectedResource.parent === pod.resource.id),
+  )
+  // Keep pod inspection close enough to distinguish its containers; external references stay lit.
+  const focusIds = selectedPod
+    ? [selectedPod.resource.id, ...selectedPod.containers.map((child) => child.resource.id)]
+    : selected
+      ? [...sceneHighlights(layout, selected, [])]
+      : matching
   const points = focusIds.map((id) => layout.positions.get(id)).filter((p): p is Point => !!p)
   const overview = !selected && matching.length === layout.resources.length
   const center: Point =

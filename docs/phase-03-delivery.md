@@ -27,13 +27,23 @@
 | Backend                          | Go tests including topology projection/redaction and metric units/failure handling pass                                                              |
 | Frontend                         | TypeScript check and Vite production build pass                                                                                                      |
 
-The expanded topology browser review awaits the user launching the prepared preview outside the
-Windows command sandbox. A sandbox-launched server was not reachable by the in-app browser. The full
-automated browser suite remains unverified locally; manual checks do not substitute for it.
+The expanded preview at `http://127.0.0.1:19094/#habitat` was reviewed in the in-app browser.
+Namespace `habitat-lab` showed 3 observed node rooms, 5 pods and 7 containers. Selecting the shared
+pod exposed its three Running containers and both volumes in the inspector. All 11 supported API
+kinds reported current observations after a connection interruption. The allowed client returned
+“Allowed by policy” for TCP port 80; the restricted client returned “Denied by policy”. When API
+observations were stale, the check returned “Unknown”. These are configuration evaluations, not
+measured reachability. No browser console errors were observed during this review.
+
+The memory-backed volume inspector showed `emptyDir`, medium `Memory` and a `16Mi` size limit. The
+local API connection intermittently reconnects during review; affected resources retain their last
+observation with unknown freshness. Investigating that instability remains acceptance work.
+
+The full automated browser suite remains unverified locally; manual checks do not substitute for it.
 
 ## Open acceptance work
 
-Refine house artwork with the user; review the expanded layers in the live browser; verify camera
-and keyboard navigation across further cluster sizes; complete denied access/outage/recovery lab
-scenarios. Later-phase telemetry, controller/custom-resource coverage and lifecycle history remain
-open. No production release or successful GitHub publication is claimed.
+Refine house artwork with the user; verify camera and keyboard navigation across further cluster
+sizes; complete denied access/outage/recovery lab scenarios. Later-phase telemetry,
+controller/custom-resource coverage and lifecycle history remain open. No production release or
+successful GitHub publication is claimed.

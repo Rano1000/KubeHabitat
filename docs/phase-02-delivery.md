@@ -42,9 +42,10 @@ replica change created real unscheduled pods and expanded the waiting area; the 
 restored to two replicas. Additional fixtures are recorded in the
 [Phase 03 delivery record](phase-03-delivery.md).
 
-The official kind v0.33.0 binary checksum was verified. Docker's named pipe and preview servers
-launched inside the command sandbox remain inaccessible to the agent/browser respectively. The
-user's regular Windows terminal runs the prepared lab launcher. No production cluster was used.
+The official kind v0.33.0 binary checksum was verified. Docker's named pipe is inaccessible from the
+command sandbox. Initial sandbox server attempts could not be reached by the in-app browser; the
+prepared launcher runs from the user's regular Windows terminal. The updated preview was later
+reachable and manually reviewed as recorded in Phase 03. No production cluster was used.
 
 ## Remaining gate
 
