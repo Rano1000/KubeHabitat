@@ -15,6 +15,10 @@ KubeHabitat’s first visual identity was selected by the project maintainer dur
 `live-discovery.svg` is an original source-authored diagram of the implemented read-only discovery
 and credential boundary.
 
+`live-topology.svg` is an original source-authored KubeHabitat guide to network, storage and
+resource evidence. Its gentle illustration animation respects reduced motion. It is explanatory
+artwork, not a screenshot or measured traffic display.
+
 Source-authored diagrams are covered by the repository’s Apache-2.0 license. Generated artwork is
 available under the same license to the extent of the project’s rights. Third-party marks remain
 subject to their owners’ rights. KubeHabitat is not an official Kubernetes project.

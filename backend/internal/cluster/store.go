@@ -18,6 +18,8 @@ type Store struct {
 	objects       map[string][]Resource
 	visibility    map[string]Visibility
 	informers     map[string]cache.SharedIndexInformer
+	metrics       Telemetry
+	usage         map[string]Usage
 }
 
 func NewStore(name string) *Store {
@@ -26,7 +28,9 @@ func NewStore(name string) *Store {
 		panic(err)
 	}
 	s := &Store{name: name, session: hex.EncodeToString(token[:]), objects: map[string][]Resource{}, visibility: map[string]Visibility{}, informers: map[string]cache.SharedIndexInformer{}}
-	for _, kind := range []string{"Node", "Namespace", "Pod"} {
+	s.metrics = Telemetry{State: "unavailable", Reason: "Metrics API has not been observed"}
+	s.usage = map[string]Usage{}
+	for _, kind := range observedKinds {
 		s.visibility[kind] = Visibility{Kind: kind, State: "connecting"}
 	}
 	return s
@@ -107,7 +111,8 @@ func (s *Store) Snapshot() Snapshot {
 	now := time.Now().UTC()
 	result := Snapshot{SchemaVersion: 1, SessionID: s.session, Revision: s.revision, GeneratedAt: now,
 		DataSource: "kubernetes", Cluster: s.name, Connection: "connected", Resources: []Resource{}, Visibility: []Visibility{}}
-	for _, kind := range []string{"Node", "Namespace", "Pod"} {
+	result.Metrics = s.metrics
+	for _, kind := range observedKinds {
 		v := s.visibility[kind]
 		if informer := s.informers[kind]; informer != nil {
 			v.Synced = informer.HasSynced()
@@ -133,7 +138,15 @@ func (s *Store) Snapshot() Snapshot {
 		result.Connection = "disconnected"
 	}
 	for _, values := range s.objects {
-		result.Resources = append(result.Resources, values...)
+		for _, r := range values {
+			if u, ok := s.usage[r.ID]; ok && s.metrics.State == "observing" {
+				sample, _ := time.Parse(time.RFC3339, u.Timestamp)
+				if now.Sub(sample) <= 90*time.Second {
+					r.Usage = &u
+				}
+			}
+			result.Resources = append(result.Resources, r)
+		}
 	}
 	sort.Slice(result.Resources, func(i, j int) bool { return result.Resources[i].ID < result.Resources[j].ID })
 	return result

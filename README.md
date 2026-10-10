@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-6acfc0" /></a>
-  <img alt="Status: Phase 02 live discovery" src="https://img.shields.io/badge/status-Phase%2002%20live%20discovery-7d9bd3" />
+  <img alt="Status: live habitat in development" src="https://img.shields.io/badge/status-live%20habitat%20in%20development-7d9bd3" />
   <a href="CONTRIBUTING.md"><img alt="Contributions welcome" src="https://img.shields.io/badge/contributions-welcome-6acfc0" /></a>
 </p>
 
@@ -49,31 +49,43 @@ and the limits of the metaphor.
 
 ## Current status
 
-**Phase 02 — live discovery implemented, real-cluster verification pending.** The Live cluster tab
-connects to opt-in read-only Kubernetes discovery. The Habitat tab remains the authored 3D demo;
-Phase 03 will generate the house from live objects. Metrics, logs and incident diagnosis are
-planned.
+**Live house and initial topology layers — in review.** Habitat and Live cluster both render
+read-only Kubernetes observations. Node rooms, pods and nested containers follow the actual cache;
+the house expands and contracts with object placement. The authored examples live only in **Demo
+examples**. Live data never falls back to those fixtures.
 
 Available in this branch:
 
-- React / TypeScript interface with a real Three.js scene, two example node rooms, three example
-  pods, and their containers.
+- React / TypeScript interface with a Three.js house generated from observed nodes, pods and all
+  app, init and ephemeral containers, including multiple containers inside a single pod.
 - Searchable inventory, resource-kind highlighting, clickable objects, and guided camera focus.
-- A details panel explaining each demo resource and its visual meaning.
+- A details panel with real identities, conditions, resource requests, limits and relationships.
 - Pause controls, reduced-motion support, and HTML inspection when the scene is unavailable.
 - An animated field guide with the mental model, setup instructions, target architecture, and
   roadmap.
 - Go health/status and live snapshot endpoints; optional serving of the compiled frontend.
 - Read-only shared informers for nodes, namespaces and pods, with derived containers.
 - A live inventory and condition inspector with per-kind permissions, freshness and recovery.
+- Services, EndpointSlices, ingress routes and declared pod-to-pod NetworkPolicy checks.
+- Pod volumes, namespace claims, cluster volumes, storage classes and quota accounting.
+- Node CPU, memory and ephemeral storage capacity; optional Metrics API CPU/memory samples.
 - Contributor guides and automated build, API, browser, and documentation checks.
 
 See the [live connection guide](docs/live-connection.md) and
-[Phase 02 delivery record](docs/phase-02-delivery.md). Real-cluster 3D generation, lifecycle
-visualization, investigation, metrics, storage, traffic and packaging follow the
-[roadmap](docs/roadmap.md).
+[Phase 03 delivery record](docs/phase-03-delivery.md). Full lifecycle animation, investigation,
+traffic telemetry, history and packaging follow the [roadmap](docs/roadmap.md).
 
 ![Read-only live discovery architecture](docs/assets/live-discovery.svg)
+
+### Read the visual layers
+
+![KubeHabitat network, storage and resource model](docs/assets/live-topology.svg)
+
+Blue links represent observed network configuration. Gold links represent storage references. Policy
+results describe declarations for a chosen source, destination, port and protocol; they do not
+certify reachable listeners or CNI enforcement. CPU/memory usage requires the Metrics API.
+Filesystem usage and traffic are visibly unavailable until those telemetry sources are integrated.
+See the [coverage and evidence guide](docs/live-topology.md).
 
 ## Get started
 
@@ -110,8 +122,9 @@ npm ci
 npm run dev
 ```
 
-Open **[http://127.0.0.1:5173](http://127.0.0.1:5173)**. Select a component, switch resource kinds,
-orbit the house, and open the **Field guide** tab.
+Open **[http://127.0.0.1:5173](http://127.0.0.1:5173)**. Enable discovery using the
+[live connection guide](docs/live-connection.md), or select **Demo examples** (`/#demo`) to explore
+the authored scene without a cluster. Open **Field guide** for the animated introduction.
 
 The UI always labels its local fixtures as **DEMO**. The backend indicator reports API reachability;
 backend availability does not mean Kubernetes is connected. Vite forwards `/api` and `/healthz` to
@@ -145,7 +158,7 @@ The status response explicitly includes:
 ```json
 {
   "service": "kubehabitat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "connection": "disconnected",
   "dataSource": "demo",
   "message": "Phase 01 foundation. No Kubernetes client is configured. Resources are local demo fixtures."
@@ -156,19 +169,19 @@ The status response explicitly includes:
 
 ![Target architecture: Kubernetes observations pass through a Go cache into scene updates and the browser inspector](docs/assets/architecture.svg)
 
-_Target data flow. The cluster adapter and update stream are planned; the current Go API supplies
-health and status only._
+_Target architecture. Read-only discovery and full snapshot polling are implemented. Historical
+recording and traffic integrations remain planned._
 
-| Area                | Location                                             | Phase 01 responsibility                               |
-| ------------------- | ---------------------------------------------------- | ----------------------------------------------------- |
-| Browser application | [frontend/](frontend/)                               | Inventory, demo scene, inspector, field guide         |
-| HTTP service        | [backend/](backend/)                                 | Health, disconnected status, static frontend          |
-| Project knowledge   | [docs/](docs/)                                       | Product model, architecture, roadmap, onboarding      |
-| Quality checks      | [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, API tests, browser checks, documentation links |
+| Area                | Location                                             | Current responsibility                                  |
+| ------------------- | ---------------------------------------------------- | ------------------------------------------------------- |
+| Browser application | [frontend/](frontend/)                               | Live house, topology, inventory, inspector, field guide |
+| HTTP service        | [backend/](backend/)                                 | Read-only discovery, metrics, snapshots, static serving |
+| Project knowledge   | [docs/](docs/)                                       | Product model, architecture, roadmap, onboarding        |
+| Quality checks      | [.github/workflows/ci.yml](.github/workflows/ci.yml) | Build, API tests, browser checks, documentation links   |
 
-Kubernetes credentials will stay on the backend. Future integrations use read-only access and
-preserve object UIDs, observation freshness, and telemetry provenance. See the
-[architecture](docs/architecture.md) and [foundation decision](docs/decisions/0001-foundation.md).
+Kubernetes credentials stay on the backend. Integrations use read-only access and preserve object
+UIDs, observation freshness, and telemetry provenance. See the [architecture](docs/architecture.md)
+and [foundation decision](docs/decisions/0001-foundation.md).
 
 ## Documentation and contribution
 

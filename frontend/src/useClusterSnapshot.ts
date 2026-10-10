@@ -1,6 +1,37 @@
 import { useEffect, useState } from 'react'
 
-export const liveKinds = ['Node', 'Namespace', 'Pod', 'Container'] as const
+export const liveKinds = [
+  'Node',
+  'Namespace',
+  'Pod',
+  'Container',
+  'Service',
+  'EndpointSlice',
+  'Ingress',
+  'NetworkPolicy',
+  'Volume',
+  'PersistentVolumeClaim',
+  'PersistentVolume',
+  'StorageClass',
+  'ResourceQuota',
+] as const
+export type Selector = {
+  matchLabels?: Record<string, string>
+  matchExpressions?: { key: string; operator: string; values?: string[] }[]
+}
+export type PolicyPeer = {
+  podSelector?: Selector
+  namespaceSelector?: Selector
+  ipBlock?: { cidr: string; except?: string[] }
+}
+export type PolicyPort = { protocol?: string; port?: number | string; endPort?: number }
+export type PolicyRule = { from?: PolicyPeer[]; to?: PolicyPeer[]; ports?: PolicyPort[] }
+export type Policy = {
+  podSelector: Selector
+  policyTypes?: string[]
+  ingress?: PolicyRule[]
+  egress?: PolicyRule[]
+}
 export type LiveKind = (typeof liveKinds)[number]
 export type LiveResource = {
   id: string
@@ -21,9 +52,14 @@ export type LiveResource = {
   exitCode?: number
   deleting?: boolean
   conditions?: { type: string; status: string; reason?: string }[]
+  labels?: Record<string, string>
+  details?: Record<string, string>
+  links?: { kind: LiveKind; name?: string; namespace?: string; uid?: string; relation: string }[]
+  policy?: Policy
+  usage?: { cpuMilli: number; memoryBytes: number; timestamp: string; window: string }
 }
 export type Visibility = {
-  kind: Exclude<LiveKind, 'Container'>
+  kind: Exclude<LiveKind, 'Container' | 'Volume'>
   state: 'connecting' | 'observing' | 'reconnecting' | 'denied' | 'stale'
   synced: boolean
   lastSuccess?: string
@@ -39,10 +75,73 @@ export type ClusterSnapshot = {
   connection: 'connected' | 'partial' | 'disconnected'
   visibility: Visibility[]
   resources: LiveResource[]
+  metrics?: { state: string; reason: string }
 }
 
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object'
 const date = (v: unknown): v is string => typeof v === 'string' && Number.isFinite(Date.parse(v))
+const selector = (v: unknown): boolean =>
+  record(v) &&
+  (v.matchLabels === undefined ||
+    (record(v.matchLabels) && Object.values(v.matchLabels).every((n) => typeof n === 'string'))) &&
+  (v.matchExpressions === undefined ||
+    (Array.isArray(v.matchExpressions) &&
+      v.matchExpressions.every(
+        (e) =>
+          record(e) &&
+          typeof e.key === 'string' &&
+          typeof e.operator === 'string' &&
+          (e.values === undefined ||
+            (Array.isArray(e.values) && e.values.every((n) => typeof n === 'string'))),
+      )))
+function validPolicy(value: unknown): boolean {
+  if (!record(value) || !selector(value.podSelector)) return false
+  if (
+    value.policyTypes !== undefined &&
+    (!Array.isArray(value.policyTypes) ||
+      !value.policyTypes.every((v) => ['Ingress', 'Egress'].includes(String(v))))
+  )
+    return false
+  return ['ingress', 'egress'].every(
+    (key) =>
+      value[key] === undefined ||
+      (Array.isArray(value[key]) &&
+        value[key].every(
+          (rule) =>
+            record(rule) &&
+            ['from', 'to'].every(
+              (direction) =>
+                rule[direction] === undefined ||
+                (Array.isArray(rule[direction]) &&
+                  rule[direction].every(
+                    (p) =>
+                      record(p) &&
+                      (p.podSelector === undefined || selector(p.podSelector)) &&
+                      (p.namespaceSelector === undefined || selector(p.namespaceSelector)) &&
+                      (p.ipBlock === undefined ||
+                        (record(p.ipBlock) && typeof p.ipBlock.cidr === 'string')),
+                  )),
+            ) &&
+            (rule.ports === undefined ||
+              (Array.isArray(rule.ports) &&
+                rule.ports.every(
+                  (p) =>
+                    record(p) &&
+                    (p.protocol === undefined ||
+                      ['TCP', 'UDP', 'SCTP'].includes(String(p.protocol))) &&
+                    (p.port === undefined ||
+                      typeof p.port === 'string' ||
+                      (Number.isInteger(p.port) &&
+                        Number(p.port) > 0 &&
+                        Number(p.port) <= 65535)) &&
+                    (p.endPort === undefined ||
+                      (Number.isInteger(p.endPort) &&
+                        Number(p.endPort) >= Number(p.port) &&
+                        Number(p.endPort) <= 65535)),
+                ))),
+        )),
+  )
+}
 
 export function parseSnapshot(value: unknown): ClusterSnapshot {
   if (
@@ -74,6 +173,40 @@ export function parseSnapshot(value: unknown): ClusterSnapshot {
     )
       throw new Error('Invalid resource observation')
     ids.add(r.id)
+    for (const field of ['labels', 'details']) {
+      if (
+        r[field] !== undefined &&
+        (!record(r[field]) || !Object.values(r[field]).every((v) => typeof v === 'string'))
+      )
+        throw new Error('Invalid resource metadata')
+    }
+    if (
+      r.links !== undefined &&
+      (!Array.isArray(r.links) ||
+        !r.links.every(
+          (l) =>
+            record(l) &&
+            liveKinds.includes(l.kind as LiveKind) &&
+            typeof l.relation === 'string' &&
+            ['name', 'namespace', 'uid'].every(
+              (k) => l[k] === undefined || typeof l[k] === 'string',
+            ),
+        ))
+    )
+      throw new Error('Invalid relationship')
+    if (
+      r.usage !== undefined &&
+      (!record(r.usage) ||
+        !Number.isFinite(r.usage.cpuMilli) ||
+        Number(r.usage.cpuMilli) < 0 ||
+        !Number.isFinite(r.usage.memoryBytes) ||
+        Number(r.usage.memoryBytes) < 0 ||
+        !date(r.usage.timestamp) ||
+        typeof r.usage.window !== 'string')
+    )
+      throw new Error('Invalid usage sample')
+    if (r.policy !== undefined && !validPolicy(r.policy))
+      throw new Error('Invalid policy observation')
     for (const field of ['namespace', 'nodeName', 'parent', 'phase', 'containerType', 'reason']) {
       if (r[field] !== undefined && typeof r[field] !== 'string')
         throw new Error('Invalid resource field')
@@ -105,7 +238,9 @@ export function parseSnapshot(value: unknown): ClusterSnapshot {
   for (const v of value.visibility) {
     if (
       !record(v) ||
-      !['Node', 'Namespace', 'Pod'].includes(String(v.kind)) ||
+      !liveKinds
+        .filter((k) => k !== 'Container' && k !== 'Volume')
+        .includes(v.kind as Exclude<LiveKind, 'Container' | 'Volume'>) ||
       kinds.has(String(v.kind)) ||
       !['connecting', 'observing', 'reconnecting', 'denied', 'stale'].includes(String(v.state)) ||
       typeof v.synced !== 'boolean' ||
@@ -115,7 +250,15 @@ export function parseSnapshot(value: unknown): ClusterSnapshot {
       throw new Error('Invalid visibility observation')
     kinds.add(String(v.kind))
   }
-  if (kinds.size !== 3) throw new Error('Missing resource visibility')
+  if (!['Node', 'Namespace', 'Pod'].every((k) => kinds.has(k)))
+    throw new Error('Missing resource visibility')
+  if (
+    value.metrics !== undefined &&
+    (!record(value.metrics) ||
+      typeof value.metrics.state !== 'string' ||
+      typeof value.metrics.reason !== 'string')
+  )
+    throw new Error('Invalid telemetry state')
   return value as ClusterSnapshot
 }
 
@@ -185,7 +328,7 @@ export function useClusterSnapshot() {
     snapshot,
     error,
     resynced,
-    age: receivedAt ? Math.floor((now - receivedAt) / 1000) : null,
+    age: receivedAt ? Math.max(0, Math.floor((now - receivedAt) / 1000)) : null,
     stale: !!error || !receivedAt || now - receivedAt > 10000,
   }
 }

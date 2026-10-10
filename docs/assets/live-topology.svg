@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" role="img" aria-labelledby="title desc">
+ <title id="title">KubeHabitat live topology and evidence layers</title>
+ <desc id="desc">A cluster house contains node rooms and pods with several containers. Network configuration, namespace storage claims and cluster storage are linked, while resource configuration and measured usage remain distinct.</desc>
+ <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0c1727"/><stop offset="1" stop-color="#142a3b"/></linearGradient><style>
+ text{font-family:system-ui,sans-serif;fill:#dbe6f4}.muted{fill:#a6b9cd}.teal{fill:#7be0d4}.gold{fill:#e4be77}.line{fill:none;stroke:#6c92ac;stroke-width:2}.glow{animation:breathe 5s ease-in-out infinite}@keyframes breathe{50%{opacity:.55}}@media(prefers-reduced-motion:reduce){.glow{animation:none}}
+ </style></defs>
+ <rect width="1100" height="620" rx="24" fill="url(#bg)"/>
+ <text x="44" y="50" font-size="12" class="teal" letter-spacing="3">KUBEHABITAT / LIVE MODEL</text>
+ <text x="44" y="90" font-size="29" font-weight="650">One house. Several kinds of evidence.</text>
+ <text x="44" y="121" font-size="14" class="muted">Observed objects drive geometry. Configuration does not pretend to be measured traffic or usage.</text>
+ <path d="M54 250 320 165 580 250V495H54Z" class="line"/>
+ <text x="220" y="230" font-size="15" class="teal">CLUSTER HOUSE</text>
+ <rect x="76" y="269" width="230" height="200" rx="12" fill="#173248" stroke="#456e88"/>
+ <rect x="325" y="269" width="230" height="200" rx="12" fill="#173248" stroke="#456e88"/>
+ <text x="94" y="300" font-size="14">Node room A</text><text x="343" y="300" font-size="14">Node room B</text>
+ <circle cx="190" cy="373" r="57" fill="#133c48" stroke="#7be0d4" stroke-width="2" class="glow"/>
+ <rect x="152" y="355" width="23" height="28" rx="3" fill="#7be0d4"/><rect x="179" y="355" width="23" height="28" rx="3" fill="#83b5ee"/><rect x="206" y="355" width="23" height="28" rx="3" fill="#c1a4ed"/>
+ <text x="151" y="408" font-size="12">One pod · 3 boxes</text>
+ <circle cx="438" cy="373" r="43" fill="#133c48" stroke="#7be0d4" stroke-width="2"/>
+ <rect x="424" y="359" width="28" height="28" rx="3" fill="#7be0d4"/>
+ <path d="M117 450H515" stroke="#c1a4ed" stroke-width="3"/>
+ <text x="182" y="486" font-size="11" class="muted">Namespace membership spans node rooms</text>
+ <rect x="620" y="165" width="434" height="109" rx="14" fill="#142e43" stroke="#496b8c"/>
+ <text x="643" y="193" font-size="14" font-weight="600">NETWORK / CONFIGURATION</text>
+ <path d="M644 226H785M823 226H1015" stroke="#83b5ee" stroke-width="3"/>
+ <polygon points="805,211 822,226 805,241 788,226" fill="#83b5ee"/>
+ <text x="643" y="258" font-size="12" class="muted">Ingress → service → observed pod endpoints</text>
+ <rect x="620" y="291" width="434" height="109" rx="14" fill="#293036" stroke="#897955"/>
+ <text x="643" y="319" font-size="14" font-weight="600" class="gold">STORAGE / REFERENCE CHAIN</text>
+ <text x="643" y="349" font-size="14">Container → volume → PVC → PV → class</text>
+ <text x="643" y="381" font-size="12" class="muted">Namespace claim · cluster volume · used space unknown</text>
+ <rect x="620" y="417" width="434" height="109" rx="14" fill="#153438" stroke="#427d75"/>
+ <text x="643" y="445" font-size="14" font-weight="600" class="teal">RESOURCES / TWO SEPARATE SIGNALS</text>
+ <text x="643" y="475" font-size="14">Capacity, requests, limits and namespace quota</text>
+ <text x="643" y="507" font-size="12" class="muted">Measured CPU &amp; memory require fresh Metrics API samples</text>
+ <path d="M554 342H599V226H620M554 430H599V344H620" fill="none" stroke="#526b80" stroke-width="2" stroke-dasharray="5 6"/>
+ <text x="44" y="571" font-size="13" class="muted">Policy color = declared access for a chosen port. Reachability and CNI enforcement are separate evidence.</text>
+ <text x="44" y="596" font-size="11" class="muted">Project-specific model guide · illustrated objects are explanatory examples, not a live cluster screenshot.</text>
+</svg>

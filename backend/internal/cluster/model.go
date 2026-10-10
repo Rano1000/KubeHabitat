@@ -12,24 +12,47 @@ type Condition struct {
 // Resource contains only the fields needed for inventory and visual state.
 // Pod specs, environment variables, annotations, and Secret payloads are never serialized.
 type Resource struct {
-	ID              string      `json:"id"`
-	UID             string      `json:"uid"`
-	Kind            string      `json:"kind"`
-	Name            string      `json:"name"`
-	Namespace       string      `json:"namespace,omitempty"`
-	NodeName        string      `json:"nodeName,omitempty"`
-	Parent          string      `json:"parent,omitempty"`
-	ResourceVersion string      `json:"resourceVersion"`
-	ObservedAt      time.Time   `json:"observedAt"`
-	Phase           string      `json:"phase,omitempty"`
-	State           string      `json:"state"`
-	Ready           *bool       `json:"ready,omitempty"`
-	RestartCount    *int32      `json:"restartCount,omitempty"`
-	ContainerType   string      `json:"containerType,omitempty"`
-	Reason          string      `json:"reason,omitempty"`
-	ExitCode        *int32      `json:"exitCode,omitempty"`
-	Deleting        bool        `json:"deleting,omitempty"`
-	Conditions      []Condition `json:"conditions,omitempty"`
+	ID              string            `json:"id"`
+	UID             string            `json:"uid"`
+	Kind            string            `json:"kind"`
+	Name            string            `json:"name"`
+	Namespace       string            `json:"namespace,omitempty"`
+	NodeName        string            `json:"nodeName,omitempty"`
+	Parent          string            `json:"parent,omitempty"`
+	ResourceVersion string            `json:"resourceVersion"`
+	ObservedAt      time.Time         `json:"observedAt"`
+	Phase           string            `json:"phase,omitempty"`
+	State           string            `json:"state"`
+	Ready           *bool             `json:"ready,omitempty"`
+	RestartCount    *int32            `json:"restartCount,omitempty"`
+	ContainerType   string            `json:"containerType,omitempty"`
+	Reason          string            `json:"reason,omitempty"`
+	ExitCode        *int32            `json:"exitCode,omitempty"`
+	Deleting        bool              `json:"deleting,omitempty"`
+	Conditions      []Condition       `json:"conditions,omitempty"`
+	Labels          map[string]string `json:"labels,omitempty"`
+	Details         map[string]string `json:"details,omitempty"`
+	Links           []Link            `json:"links,omitempty"`
+	Policy          *Policy           `json:"policy,omitempty"`
+	Usage           *Usage            `json:"usage,omitempty"`
+}
+
+type Link struct {
+	Kind      string `json:"kind"`
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	UID       string `json:"uid,omitempty"`
+	Relation  string `json:"relation"`
+}
+type Usage struct {
+	CPUMilli    int64  `json:"cpuMilli"`
+	MemoryBytes int64  `json:"memoryBytes"`
+	Timestamp   string `json:"timestamp"`
+	Window      string `json:"window"`
+}
+type Telemetry struct {
+	State  string `json:"state"`
+	Reason string `json:"reason"`
 }
 
 type Visibility struct {
@@ -51,4 +74,5 @@ type Snapshot struct {
 	Connection    string       `json:"connection"`
 	Visibility    []Visibility `json:"visibility"`
 	Resources     []Resource   `json:"resources"`
+	Metrics       Telemetry    `json:"metrics"`
 }

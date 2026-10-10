@@ -127,10 +127,24 @@ test('live inspection remains usable on a narrow screen with reduced motion', as
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )
-  expect(
-    await page
-      .locator('.orbit-ring')
-      .first()
-      .evaluate((e) => getComputedStyle(e).animationName),
-  ).toBe('none')
+  await expect(
+    page.getByText('Reduced motion is enabled by your system.', { exact: false }),
+  ).toBeVisible()
+  await expect(page.getByLabel('Live cluster house')).toHaveAttribute('data-pod-count', '1')
+})
+
+test('Habitat opens actual snapshots by default and keeps house counts synchronized', async ({
+  page,
+}) => {
+  let current = snapshot()
+  await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: current }))
+  await page.goto('/#habitat')
+  const house = page.getByLabel('Live cluster house')
+  await expect(house).toHaveAttribute('data-node-count', '0')
+  await expect(house).toHaveAttribute('data-pod-count', '1')
+  await expect(house).toHaveAttribute('data-container-count', '1')
+  await expect(page.getByText('web-example')).toHaveCount(0)
+  current = { ...snapshot(2), resources: [] }
+  await expect(house).toHaveAttribute('data-pod-count', '0', { timeout: 8000 })
+  await expect(house).toHaveAttribute('data-container-count', '0')
 })

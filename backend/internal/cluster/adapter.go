@@ -7,6 +7,9 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
+	networkv1 "k8s.io/api/networking/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -57,6 +60,30 @@ func (s *Store) Start(ctx context.Context, client kubernetes.Interface) error {
 			return core.Namespaces().List(c, o)
 		}, core.Namespaces().Watch},
 		{"Pod", &corev1.Pod{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) { return core.Pods("").List(c, o) }, core.Pods("").Watch},
+		{"Service", &corev1.Service{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return core.Services("").List(c, o)
+		}, core.Services("").Watch},
+		{"EndpointSlice", &discoveryv1.EndpointSlice{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return client.DiscoveryV1().EndpointSlices("").List(c, o)
+		}, client.DiscoveryV1().EndpointSlices("").Watch},
+		{"Ingress", &networkv1.Ingress{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return client.NetworkingV1().Ingresses("").List(c, o)
+		}, client.NetworkingV1().Ingresses("").Watch},
+		{"NetworkPolicy", &networkv1.NetworkPolicy{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return client.NetworkingV1().NetworkPolicies("").List(c, o)
+		}, client.NetworkingV1().NetworkPolicies("").Watch},
+		{"PersistentVolumeClaim", &corev1.PersistentVolumeClaim{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return core.PersistentVolumeClaims("").List(c, o)
+		}, core.PersistentVolumeClaims("").Watch},
+		{"PersistentVolume", &corev1.PersistentVolume{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return core.PersistentVolumes().List(c, o)
+		}, core.PersistentVolumes().Watch},
+		{"StorageClass", &storagev1.StorageClass{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return client.StorageV1().StorageClasses().List(c, o)
+		}, client.StorageV1().StorageClasses().Watch},
+		{"ResourceQuota", &corev1.ResourceQuota{}, func(c context.Context, o metav1.ListOptions) (runtime.Object, error) {
+			return core.ResourceQuotas("").List(c, o)
+		}, core.ResourceQuotas("").Watch},
 	}
 	for _, definition := range definitions {
 		d := definition

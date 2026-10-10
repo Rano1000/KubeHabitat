@@ -6,7 +6,7 @@ test('demo stays honest while the API and development proxy are available', asyn
 }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.goto('/')
+  await page.goto('/#demo')
   await expect(page.getByText('Illustrative resources. Kubernetes is not connected.')).toBeVisible()
   await expect(page.getByText('Backend available · cluster disconnected')).toBeVisible()
   await expect(page.locator('canvas')).toBeVisible()
@@ -32,7 +32,7 @@ test('demo stays honest while the API and development proxy are available', asyn
 test('resource selection, keyboard inspection, search, and parent navigation work together', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/#demo')
   await page.getByRole('button', { name: /^Containers/ }).click()
   const worker = page.getByRole('button', { name: /worker Container/ })
   await worker.focus()
@@ -61,7 +61,7 @@ test('resource selection, keyboard inspection, search, and parent navigation wor
 test('field guide and mobile inspection respect reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/#demo')
   await expect(page.getByText('Reduced motion is enabled by your system.')).toBeVisible()
   await page.getByRole('button', { name: /^Pods/ }).click()
   await page.getByRole('button', { name: /web-example Pod/ }).click()
@@ -103,7 +103,7 @@ test('backend failure never turns fixtures into a live cluster', async ({ page }
       body: '{"error":"unavailable"}',
     }),
   )
-  await page.goto('/')
+  await page.goto('/#demo')
   await expect(page.getByText('Backend unavailable · local demo only')).toBeVisible()
   await page.getByRole('button', { name: /api-example Pod/ }).click()
   await expect(
@@ -113,7 +113,7 @@ test('backend failure never turns fixtures into a live cluster', async ({ page }
 
 test('a container is clickable through its pod wireframe', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/')
+  await page.goto('/#demo')
   await expect(page.locator('canvas')).toBeVisible()
   await page.getByRole('button', { name: /worker-example Pod/ }).click()
   await page.evaluate(
@@ -140,7 +140,7 @@ test('HTML inspection remains usable when WebGL cannot initialize', async ({ pag
       },
     })
   })
-  await page.goto('/')
+  await page.goto('/#demo')
   await expect(page.getByText('3D view unavailable', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: /api-example Pod/ }).click()
   await expect(

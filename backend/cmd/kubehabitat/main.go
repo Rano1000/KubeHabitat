@@ -41,6 +41,7 @@ func main() {
 		if err := store.Start(ctx, client); err != nil {
 			log.Fatal(err)
 		}
+		store.StartMetrics(ctx, client.CoreV1().RESTClient())
 	} else if *kubeconfig != "" || *kubecontext != "" || *inCluster {
 		log.Fatal("Kubernetes options require -live")
 	}

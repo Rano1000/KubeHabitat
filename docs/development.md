@@ -28,8 +28,9 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. The initial local fixtures remain labelled DEMO. The backend indicator
-is separate from cluster connectivity. The Field guide tab opens the interactive documentation.
+Open `http://127.0.0.1:5173`. Habitat requires live discovery; `/#demo` shows labelled fixtures. The
+backend indicator is separate from cluster connectivity. The Field guide tab opens the interactive
+documentation.
 
 ## Build the app
 
@@ -63,6 +64,7 @@ go build ./cmd/kubehabitat
 cd ../frontend
 npm ci
 npm run build
+npm run test:layout
 npx playwright install chromium
 npm run test:e2e
 ```
@@ -122,7 +124,10 @@ is not required for these automated checks.
 
 `backend/internal/cluster` implements informers, projection and freshness. The live browser
 interface is in `frontend/src/LiveInventory.tsx`; its snapshot contract/recovery logic is in
-`frontend/src/useClusterSnapshot.ts`. Real-cluster spatial placement is Phase 03.
+`frontend/src/useClusterSnapshot.ts`. `habitatLayout.ts` generates deterministic placement and
+reference edges; `LiveHabitatScene.tsx` renders live objects. `networkPolicy.ts` evaluates declared
+selectors and ports, without claiming measured reachability. `npm run test:layout` exercises layout
+and policy semantics without launching a browser.
 
 Browser checks can use an installed Chromium-compatible executable by setting
 `KUBEHABITAT_BROWSER_EXECUTABLE`. If the default ports are occupied, set `KUBEHABITAT_API_PORT` and

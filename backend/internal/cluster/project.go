@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +18,9 @@ func project(obj any, now time.Time) []Resource {
 	switch value := obj.(type) {
 	case *corev1.Node:
 		r := base("Node", value.ObjectMeta, now)
+		r.Details = map[string]string{}
+		requests(value.Status.Capacity, "capacity ", r.Details)
+		requests(value.Status.Allocatable, "allocatable ", r.Details)
 		for _, c := range value.Status.Conditions {
 			r.Conditions = append(r.Conditions, Condition{string(c.Type), string(c.Status), c.Reason})
 			if c.Type == corev1.NodeReady {
@@ -34,6 +38,7 @@ func project(obj any, now time.Time) []Resource {
 		return []Resource{r}
 	case *corev1.Namespace:
 		r := base("Namespace", value.ObjectMeta, now)
+		r.Labels = value.Labels
 		r.Phase = string(value.Status.Phase)
 		if r.Phase != "" {
 			r.State = r.Phase
@@ -41,6 +46,7 @@ func project(obj any, now time.Time) []Resource {
 		return []Resource{r}
 	case *corev1.Pod:
 		r := base("Pod", value.ObjectMeta, now)
+		r.Labels = value.Labels
 		r.Phase, r.NodeName = string(value.Status.Phase), value.Spec.NodeName
 		for _, c := range value.Status.Conditions {
 			r.Conditions = append(r.Conditions, Condition{string(c.Type), string(c.Status), c.Reason})
@@ -70,6 +76,31 @@ func project(obj any, now time.Time) []Resource {
 			for _, name := range names {
 				c := base("Container", value.ObjectMeta, now)
 				c.ID, c.Name, c.Parent, c.NodeName, c.ContainerType = r.ID+"/"+containerType+"/"+name, name, r.ID, r.NodeName, containerType
+				c.Details = map[string]string{}
+				apply := func(spec corev1.Container) {
+					if spec.Name != name {
+						return
+					}
+					requests(spec.Resources.Requests, "request ", c.Details)
+					requests(spec.Resources.Limits, "limit ", c.Details)
+					for _, m := range spec.VolumeMounts {
+						c.Links = append(c.Links, Link{Kind: "Volume", UID: r.ID + "/volume/" + m.Name, Relation: "volume mount"})
+					}
+					for _, p := range spec.Ports {
+						if p.Name != "" {
+							c.Details["port "+p.Name] = fmt.Sprintf("%s/%d", p.Protocol, p.ContainerPort)
+						}
+					}
+				}
+				for _, spec := range value.Spec.Containers {
+					apply(spec)
+				}
+				for _, spec := range value.Spec.InitContainers {
+					apply(spec)
+				}
+				for _, spec := range value.Spec.EphemeralContainers {
+					apply(corev1.Container{Name: spec.Name, Ports: spec.Ports, VolumeMounts: spec.VolumeMounts})
+				}
 				for _, status := range statuses {
 					if status.Name != name {
 						continue
@@ -104,7 +135,8 @@ func project(obj any, now time.Time) []Resource {
 		addContainers(app, value.Status.ContainerStatuses, "app")
 		addContainers(init, value.Status.InitContainerStatuses, "init")
 		addContainers(ephemeral, value.Status.EphemeralContainerStatuses, "ephemeral")
+		result = append(result, podVolumes(value, r, now)...)
 		return result
 	}
-	return nil
+	return projectTopology(obj, now)
 }

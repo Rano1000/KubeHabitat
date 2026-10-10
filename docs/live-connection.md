@@ -2,9 +2,10 @@
 
 ![KubeHabitat live discovery](assets/live-discovery.svg)
 
-Phase 02 adds a read-only Kubernetes connection and a dedicated **Live cluster** inventory. The
-**Habitat** tab remains an authored 3D demo. Generating that house from real cluster objects is
-Phase 03; full lifecycle animation is Phase 04.
+The **Habitat** and **Live cluster** tabs share a house generated from read-only observations.
+**Demo examples** (`/#demo`) is explicitly separate. Unsupported or unavailable sources never create
+pretend live objects. The [topology guide](live-topology.md) describes networking, storage and
+resource evidence; full lifecycle animation remains Phase 04.
 
 ## Start locally
 
@@ -44,14 +45,15 @@ substitutes demo objects for a live connection.
 
 ## Service account permissions
 
-[The RBAC example](../deploy/rbac-readonly.yaml) grants only the supported core resources. Create
-the `kubehabitat` namespace first. This example is an RBAC building block, not an installation
-chart. Phase 09 supplies deployment packaging and authentication. A backend inside Kubernetes can
-use `-live -in-cluster`; this is mutually exclusive with kubeconfig/context options.
+[The RBAC example](../deploy/rbac-readonly.yaml) grants reads for the supported topology resources
+and optional Metrics API. Create the `kubehabitat` namespace first. This example is an RBAC building
+block, not an installation chart. Phase 09 supplies deployment packaging and authentication. A
+backend inside Kubernetes can use `-live -in-cluster`; this is mutually exclusive with
+kubeconfig/context options.
 
-The adapter watches cluster-wide nodes, namespaces and pods. Resource-specific permission failures
-are visible, so allowed resource kinds can still appear when another kind is denied. The current
-adapter does not yet scope discovery to a single namespace.
+The adapter watches cluster-wide supported resources, including network and storage APIs.
+Resource-specific permission failures are visible, so allowed resource kinds can still appear when
+another kind is denied. The current adapter does not yet scope discovery to a single namespace.
 
 ## Read the connection signals
 
@@ -93,5 +95,5 @@ diagnosis.
 Automated checks cover projection, UID/restart/replacement semantics, container removal, informer
 updates, denied-watch visibility, browser contract validation, stale-data behavior and reconnection.
 Before closing Phase 02, also verify your own read-only cluster connection, a restricted RBAC
-context, and recovery from a real API outage. Services, storage, metrics, traffic and history remain
-in their planned roadmap phases.
+context, and recovery from a real API outage. Initial services, storage and metrics layers are
+available for review; traffic and history remain planned. See [live topology](live-topology.md).

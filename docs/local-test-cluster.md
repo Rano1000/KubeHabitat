@@ -4,7 +4,7 @@
 
 The local lab uses [kind](https://kind.sigs.k8s.io/docs/user/quick-start/), which runs Kubernetes
 nodes inside Docker containers. It is separate from the authored Habitat demo and from your other
-Kubernetes contexts. It gives the Live cluster inventory real objects to observe.
+Kubernetes contexts. It gives the live house and inventory real objects to observe.
 
 ## Preview and test workflow
 
@@ -37,6 +37,9 @@ node and two workers. Kubernetes 1.37.0 is pinned by image digest in the launche
 on localhost. Creation downloads the node image and can take several minutes; the machine needs
 enough Docker memory for three nodes. It installs two small `habitat-web` replicas in `habitat-lab`.
 These are observation fixtures using the Kubernetes pause image, not an application traffic demo.
+The [topology fixtures](../deploy/local-test/topology.yaml) additionally create a three-container
+pod, two client pods, shared persistent storage, a memory-backed volume, service, ingress policy and
+namespace quota. They do not generate application traffic.
 
 The launcher refuses to modify a same-name cluster without this checkout's ownership record. It
 never automatically deletes a cluster and never changes your default kubeconfig or current context.
@@ -64,11 +67,11 @@ node scripts/local-test-cluster.mjs --serve `
   --binary backend/bin/kubehabitat.exe --static-dir frontend/dist
 ```
 
-The live preview opens at `http://127.0.0.1:19092/#live`. Keep the terminal running. The original
-demo preview can remain on its separate port. Stopping the preview leaves the lab cluster intact. If
-the token expires, stop the live preview and rerun the launcher; it reuses the cluster and issues a
-new token. The backend receives only the observer configuration, never the lab administrator's
-configuration.
+The live preview opens at `http://127.0.0.1:19092/#habitat`. Use `--port 19094` to select another
+preview port. Keep the terminal running. The original demo preview can remain on its separate port.
+Stopping the preview leaves the lab cluster intact. If the token expires, stop the live preview and
+rerun the launcher; it reuses the cluster and issues a new token. The backend receives only the
+observer configuration, never the lab administrator's configuration.
 
 For hot reload, run the launcher without `--serve`, start the backend with `-live` and the observer
 kubeconfig (see [live connection](live-connection.md)), and start Vite as described in the
@@ -108,4 +111,4 @@ kubectl --kubeconfig .local/test-cluster/admin.json --context kind-kubehabitat-l
 A real-cluster acceptance run must also check a controlled API outage, retained stale observations,
 reconnection, restricted reads, and a real container restart without changing the pod UID. Record
 the observed results before marking Phase 02 complete. The launcher alone does not prove those
-checks or the Phase 03 live 3D layout.
+checks. See [Phase 03 evidence](phase-03-delivery.md) for separate live layout validation.

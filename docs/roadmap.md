@@ -11,7 +11,7 @@ throughput supports estimates.
 | 00    | Vision, name, first logo, visual direction        | Agreed    |
 | 01    | Runnable foundation and contributor documentation | Verified  |
 | 02    | Read-only live Kubernetes connection              | In review |
-| 03    | Real cluster house and spatial navigation         | Planned   |
+| 03    | Real cluster house and spatial navigation         | In review |
 | 04    | Accurate workload lifecycle animations            | Planned   |
 | 05    | Investigation and inspectable evidence            | Planned   |
 | 06    | Metrics, ownership, services, storage             | Planned   |
@@ -51,6 +51,9 @@ snapshot/update contract with identity, freshness, and recovery.
 failure, disconnect, reconnect, and resync are visible. No Secret payload is fetched for an icon.
 
 ## 03 · House generation and navigation
+
+See the [Phase 03 delivery record](phase-03-delivery.md). Initial network, storage and Metrics API
+layers are also available for review at the user's request; later-phase acceptance remains open.
 
 Generate rooms and placements from observations. Show namespaces across rooms and unscheduled pods
 in a waiting area. Synchronize inventory, highlighting, guided camera, and inspector.

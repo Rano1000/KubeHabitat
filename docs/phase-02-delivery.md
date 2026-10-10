@@ -35,15 +35,19 @@
 - The GitHub integration rejects writes with `403 Resource not accessible by integration`.
   Publication and CI verification are pending.
 
-Real-cluster validation is still required: this workspace has no configured Kubernetes cluster. Fake
-Kubernetes clients validate adapter behavior; they are not a production-cluster test. The official
-kind v0.33.0 Windows tool was downloaded and its SHA-256 checksum verified. Docker's Linux engine is
-running in the user's session, but the agent command sandbox denies its named-pipe connection. The
-available permission tool cannot represent that device path. The prepared lab launcher must run in
-the user's regular terminal before real-cluster evidence can be recorded.
+The user launched the isolated kind lab on 2026-10-10. It provided three real nodes, 15 initial pods
+and 15 initial containers. Observer list/watch checks passed; create/delete Pod and Secret reads
+were denied. The in-app browser verified the live house and namespace filtering. A temporary 2 to 8
+replica change created real unscheduled pods and expanded the waiting area; the test deployment was
+restored to two replicas. Additional fixtures are recorded in the
+[Phase 03 delivery record](phase-03-delivery.md).
+
+The official kind v0.33.0 binary checksum was verified. Docker's named pipe and preview servers
+launched inside the command sandbox remain inaccessible to the agent/browser respectively. The
+user's regular Windows terminal runs the prepared lab launcher. No production cluster was used.
 
 ## Remaining gate
 
-Connect the backend to a real read-only context, exercise denied access and API outage/recovery,
-then record evidence here. Phase 03 generates the real cluster house; Phase 04 adds lifecycle
-animation. Phase 02 does not imply production release readiness.
+Exercise adapter denied access and API outage/recovery against the real lab, then record evidence
+here. Phase 03 implements the real cluster house; Phase 04 adds further lifecycle animation. Phase
+02 does not imply production release readiness.

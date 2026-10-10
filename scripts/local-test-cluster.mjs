@@ -22,11 +22,17 @@ function options(args) {
     binary: null,
     staticDir: null,
     stateDir: null,
+    port: 19092,
   }
   for (let i = 0; i < args.length; i++) {
     const key = args[i]
     if (key === '--serve') result.serve = true
-    else if (key === '--help') result.help = true
+    else if (key === '--port') {
+      const port = Number(args[++i])
+      if (!Number.isInteger(port) || port < 1024 || port > 65535)
+        throw new Error('Invalid preview port.')
+      result.port = port
+    } else if (key === '--help') result.help = true
     else if (['--kind', '--binary', '--static-dir', '--state-dir'].includes(key)) {
       const value = args[++i]
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${key}.`)
@@ -89,7 +95,7 @@ async function main() {
   const settings = options(process.argv.slice(2))
   if (settings.help) {
     console.log(
-      'Usage: node scripts/local-test-cluster.mjs [--kind PATH] [--state-dir PATH] [--serve --binary PATH --static-dir PATH]',
+      'Usage: node scripts/local-test-cluster.mjs [--kind PATH] [--state-dir PATH] [--serve --binary PATH --static-dir PATH --port NUMBER]',
     )
     console.log(
       "Creates or reuses this checkout's kubehabitat-lab cluster. Docker Linux containers, kind and kubectl are required.",
@@ -169,6 +175,7 @@ async function main() {
   admin('apply', '-f', path.join(root, 'deploy/local-test/namespaces.yaml'))
   admin('apply', '-f', path.join(root, 'deploy/rbac-readonly.yaml'))
   admin('apply', '-f', path.join(root, 'deploy/local-test/workloads.yaml'))
+  admin('apply', '-f', path.join(root, 'deploy/local-test/topology.yaml'))
   admin('wait', '--for=condition=Ready', 'nodes', '--all', '--timeout=120s')
   admin(
     'rollout',
@@ -221,6 +228,9 @@ async function main() {
     checkAccess('list', 'namespaces', true),
     checkAccess('list', 'pods', true, 'habitat-lab'),
     checkAccess('watch', 'pods', true, 'habitat-lab'),
+    checkAccess('list', 'services', true, 'habitat-lab'),
+    checkAccess('list', 'networkpolicies.networking.k8s.io', true, 'habitat-lab'),
+    checkAccess('list', 'persistentvolumeclaims', true, 'habitat-lab'),
     checkAccess('create', 'pods', false, 'habitat-lab'),
     checkAccess('delete', 'pods', false, 'habitat-lab'),
     checkAccess('get', 'secrets', false, 'habitat-lab'),
@@ -239,12 +249,14 @@ async function main() {
     )
     return
   }
-  console.log('Live preview: http://127.0.0.1:19092/#live — leave this terminal open.')
+  console.log(
+    `Live preview: http://127.0.0.1:${settings.port}/#habitat — leave this terminal open.`,
+  )
   const serverProcess = spawn(
     settings.binary,
     [
       '-listen',
-      '127.0.0.1:19092',
+      `127.0.0.1:${settings.port}`,
       '-live',
       '-kubeconfig',
       observerConfig,

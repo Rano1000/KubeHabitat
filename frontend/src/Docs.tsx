@@ -20,7 +20,7 @@ const phases = [
   [
     '03',
     'Spatial navigation',
-    'Planned',
+    'In review',
     'Generate rooms from nodes and guide selection through the real cluster.',
   ],
   [
@@ -38,7 +38,7 @@ const phases = [
   [
     '06',
     'Metrics & dependencies',
-    'Planned',
+    'Initial layers',
     'Explain CPU, memory, workload ownership, services, and persistent storage.',
   ],
   [
@@ -91,8 +91,9 @@ export function Docs() {
             Open the live inventory →
           </a>
           <p>
-            The Habitat tab remains an authored demo. Live cluster house generation is Phase 03.
-            Services, storage, metrics and observed traffic follow their roadmap phases.
+            Habitat and Live cluster share the real house. Demo examples is separate. Services,
+            storage and resource configuration are now visible; measured usage requires Metrics API
+            observations. Actual traffic telemetry remains planned.
           </p>
         </section>
         <section className="doc-card wide">
@@ -149,14 +150,14 @@ export function Docs() {
               <span className="signal-dot ready" />
               <div>
                 <strong>Floating pod</strong>
-                <p>Illustrates an observed Ready condition in this demo.</p>
+                <p>Fresh Pod Ready evidence enables float and rotation in the live scene.</p>
               </div>
             </li>
             <li>
               <span className="signal-dot warning" />
               <div>
                 <strong>Amber container</strong>
-                <p>Example restart loop inside an existing pod.</p>
+                <p>Observed waiting or readiness issues inside an existing pod.</p>
               </div>
             </li>
             <li>
@@ -168,8 +169,9 @@ export function Docs() {
             </li>
           </ul>
           <p>
-            The Habitat tab uses authored demo resources. Live cluster shows read-only Kubernetes
-            observations. Telemetry, failure history and automatic diagnosis are not implemented.
+            Habitat uses real observations. Unknown freshness pauses healthy motion. Network lines
+            show configuration; policy colors do not certify reachability. Filesystem usage, traffic
+            telemetry, failure history and automatic diagnosis are not implemented.
           </p>
         </section>
         <section className="doc-card wide">
@@ -180,14 +182,14 @@ export function Docs() {
               'Kubernetes API',
               'Read-only Go cache',
               'Full snapshots',
-              'Live inventory + details',
+              'House + inventory + details',
             ].map((label, index) => (
               <div className="flow-step" key={label}>
                 <small>0{index + 1}</small>
                 <strong>{label}</strong>
                 <span>
                   {index === 0
-                    ? 'Nodes, namespaces & pods'
+                    ? 'Workloads, network & storage'
                     : index === 1
                       ? 'UIDs & freshness'
                       : index === 2
@@ -198,8 +200,9 @@ export function Docs() {
             ))}
           </div>
           <p>
-            Phase 02 connects observations to the live inventory. Phase 03 will generate the house
-            from those same objects. Credentials stay on the backend; containers derive from pods.
+            One snapshot drives counts, rooms, pods, containers and inspector. Storage and network
+            references come from observed objects. Credentials stay on the backend; containers and
+            pod volumes derive from pods.
           </p>
         </section>
         <section className="doc-card wide">
@@ -207,7 +210,7 @@ export function Docs() {
           <h2>Build it phase by phase.</h2>
           <div className="phase-grid">
             {phases.map(([number, name, state, description]) => (
-              <article key={number} className={`phase-card ${number === '01' ? 'current' : ''}`}>
+              <article key={number} className={`phase-card ${number === '03' ? 'current' : ''}`}>
                 <span className="phase-number">{number}</span>
                 <div>
                   <h3>{name}</h3>

@@ -1,76 +1,76 @@
 # Architecture
 
-![Target data flow](assets/architecture.svg)
+![KubeHabitat live evidence layers](assets/live-topology.svg)
 
-## Current foundation
+## Implemented data path
 
-Phase 02 extends this foundation with opt-in live discovery. See
-[Live connection](live-connection.md) for the implemented contract and trust boundary. The
-foundation description below records the separate authored demo; it does not describe the live
-inventory.
+React, TypeScript and Vite provide the browser shell. Read-only Go client-go informers observe
+nodes, namespaces, pods, services, EndpointSlices, ingress, NetworkPolicy, PVCs, PVs, StorageClasses
+and ResourceQuotas. Containers and pod volumes derive from pod specifications and status.
 
-React, TypeScript, and Vite provide the browser shell. A lazy-loaded React Three Fiber scene renders
-the house, example nodes and pods, and nested containers. The inventory and inspector are ordinary
-HTML and do not depend on WebGL.
+The Go cache projects an intentionally narrow contract: identity, relationships, conditions,
+capacity, resource declarations and policy selectors/rules. Environment values, Secret payloads, raw
+specifications, annotations, provider credentials and host volume paths are excluded. Pod and
+namespace labels are included for declared policy evaluation.
 
-Shared deterministic fixtures in `frontend/src/demo.ts` use `demo-` identifiers and never represent
-real cluster objects. The browser polls `/api/v1/status` every 15 seconds for backend availability,
-with a four-second request timeout. Fixtures stay explicitly local when the API is unreachable.
+The browser polls full snapshots every two seconds and keeps its last observations when requests
+fail. Each API kind reports synchronization, permission and freshness independently. One snapshot
+drives inventory counts, spatial layout and inspector. `habitatLayout.ts` generates rooms from
+observed nodes, positions assigned pods in their node rooms, nests each container and resolves
+observed references. Unscheduled pods and pods whose nodes were not observed use a waiting area.
 
-Go provides a standard-library HTTP service with bounded timeouts and graceful shutdown. No
-database, external Go dependency, Kubernetes client, or update stream is present. It optionally
-serves `frontend/dist` on the API origin.
+The live scene is lazy-loaded with React Three Fiber. `/#habitat` and `/#live` share this renderer;
+`/#demo` explicitly opens authored fixtures. No live error substitutes demo objects. The resource
+inventory and inspector remain ordinary HTML when WebGL fails.
 
-### HTTP contract
+## Telemetry and policy boundaries
 
-| Method     | Path                        | Meaning                                                            |
-| ---------- | --------------------------- | ------------------------------------------------------------------ |
-| GET / HEAD | `/healthz`                  | HTTP service available; no claim about cluster connectivity        |
-| GET / HEAD | `/api/v1/status`            | Version, disconnected connection, demo source, explanatory message |
-| GET / HEAD | Static paths, if configured | Compiled application and assets                                    |
+Optional Metrics API polling supplies CPU and memory samples with timestamp and window. Sampling
+uses read-only access and binds values to observed identities. A failed request clears current usage
+claims; old or missing measurements are not zero. Capacity, requests, limits and quota accounting
+remain separate from usage.
 
-Mutation methods are not accepted. Unknown API paths return JSON errors and cannot be masked by
-static HTML. No permissive CORS headers are set. Vite supplies a same-origin development proxy.
+Network connectors represent object references. A pure policy evaluator checks source egress and
+destination ingress for a selected port/protocol. Unsupported IP/CIDR evaluation, unavailable named
+ports or incomplete observations produce Unknown. Policy declarations do not prove CNI enforcement,
+routing, application listeners or measured communication. Traffic and filesystem usage providers
+remain planned. See [coverage and evidence](live-topology.md).
 
-### Process configuration
+## HTTP contract
 
-| Flag          | Default          | Purpose                                                        |
-| ------------- | ---------------- | -------------------------------------------------------------- |
-| `-listen`     | `127.0.0.1:8080` | HTTP bind address                                              |
-| `-static-dir` | Empty            | Compiled directory with `index.html`; empty runs API-only mode |
+| Method     | Path                        | Meaning                                                             |
+| ---------- | --------------------------- | ------------------------------------------------------------------- |
+| GET / HEAD | `/healthz`                  | HTTP service availability                                           |
+| GET / HEAD | `/api/v1/status`            | Service version and connection/data-source state                    |
+| GET / HEAD | `/api/v1/snapshot`          | Credential-free cache snapshot; 409 when live discovery is disabled |
+| GET / HEAD | Static paths, if configured | Compiled frontend and assets                                        |
 
-## Target live architecture
+Mutations return 405. Unknown API paths return JSON errors and are not masked by static HTML. The
+service has bounded HTTP timeouts and graceful shutdown. Vite forwards API requests on the
+development origin. No permissive CORS headers are configured.
 
-Nodes, namespaces, pods and derived containers are now implemented in `backend/internal/cluster`.
-`GET /api/v1/snapshot` sends full cache snapshots with session ID, revision and per-kind visibility.
-The Live cluster tab polls every two seconds and retains stale observations on failure. The 3D
-Habitat tab still uses demo fixtures; Phase 03 connects the real layout.
+## Process configuration
 
-Phase 02 introduces a Kubernetes adapter using Go `client-go` shared informers and a cache. Initial
-discovery covers nodes, namespaces, and pods; containers derive from pod specifications and status.
+| Flag            | Default                         | Meaning                                                            |
+| --------------- | ------------------------------- | ------------------------------------------------------------------ |
+| `-listen`       | `127.0.0.1:8080`                | HTTP bind address                                                  |
+| `-static-dir`   | Empty                           | Compiled frontend; empty means API only                            |
+| `-live`         | False                           | Explicit opt-in to Kubernetes credentials/discovery                |
+| `-kubeconfig`   | Client-go default loading rules | Backend-only credential path                                       |
+| `-context`      | Kubeconfig selected context     | Explicit context override                                          |
+| `-in-cluster`   | False                           | Pod service account, incompatible with explicit kubeconfig/context |
+| `-cluster-name` | `my-cluster`                    | Display label, not API server address                              |
 
-Preserve UID, resource version, observation time, and relationship sources. Expose a consistent
-snapshot and ordered incremental updates. Choose transport with the adapter contract; it must
-support reconnect, resynchronization, explicit gaps, and stale-data reporting.
+Credentials stay server-side. [Example RBAC](../deploy/rbac-readonly.yaml) grants reads only for
+supported resources and optional metrics, without Secret access, pod logs, kubelet proxy or writes.
+Production authentication and supported deployment packaging remain Phase 09.
 
-Phase 03 derives stable scene placement from observations. Later phases add owners,
-services/EndpointSlices, PVC/PV links, metrics, optional observed traffic, and retained history.
-Each integration reports availability and provenance.
+## Next integrations
 
-## Model boundaries
+Controller ownership, custom-resource extensions, recorded lifecycle/history, evidence-backed
+investigation, traffic telemetry and storage consumption will extend the same identity and freshness
+boundary. Namespaces span node rooms; container restarts differ from pod replacements; successful
+completion differs from failure. Missing observations never imply a confirmed crash.
 
-- Namespaces span rooms; they are not node subdivisions in the API.
-- Container restarts and pod replacements have distinct identities and animations.
-- CPU/memory measurements differ from requests, limits, capacity, and storage.
-- Backend liveness is independent of Kubernetes connectivity.
-- A topology edge is not observed traffic.
-- Missing permissions, telemetry, or connections produce partial/unknown visibility.
-
-## Deployment direction
-
-The target is a self-hosted application with a compiled frontend, Go service, image, and Helm chart.
-Authentication, scoped RBAC, configuration, retention policy, and upgrade guidance are required
-before a supported public release. Phase 01 is a localhost foundation.
-
-See [ADR 0001](decisions/0001-foundation.md), the [specification](product-spec.md), and the
-[roadmap](roadmap.md).
+See the [live connection guide](live-connection.md), [specification](product-spec.md),
+[roadmap](roadmap.md) and [original foundation decision](decisions/0001-foundation.md).

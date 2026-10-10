@@ -16,7 +16,9 @@ export function App() {
       ? 'docs'
       : window.location.hash === '#live'
         ? 'live'
-        : 'habitat',
+        : window.location.hash === '#demo'
+          ? 'demo'
+          : 'habitat',
   )
   const [kind, setKind] = useState<ResourceKind | 'All'>('All')
   const [selected, setSelected] = useState<string | null>(null)
@@ -46,7 +48,9 @@ export function App() {
           ? 'docs'
           : window.location.hash === '#live'
             ? 'live'
-            : 'habitat',
+            : window.location.hash === '#demo'
+              ? 'demo'
+              : 'habitat',
       )
     window.addEventListener('hashchange', changeView)
     return () => {
@@ -81,6 +85,9 @@ export function App() {
           <a href="#live" aria-current={view === 'live' ? 'page' : undefined}>
             Live cluster
           </a>
+          <a href="#demo" aria-current={view === 'demo' ? 'page' : undefined}>
+            Demo examples
+          </a>
           <a href="https://github.com/Rano1000/KubeHabitat" target="_blank" rel="noreferrer">
             GitHub ↗
           </a>
@@ -94,9 +101,9 @@ export function App() {
             {paused ? 'Resume animations' : 'Pause animations'}
           </button>
         )}
-        <span className="phase-label">PHASE 02 / LIVE DISCOVERY</span>
+        <span className="phase-label">PHASE 03 / LIVE HABITAT</span>
       </header>
-      {view !== 'live' && (
+      {view === 'demo' && (
         <div className="demo-banner">
           <span className="demo-tag">DEMO</span>
           <p>
@@ -116,7 +123,7 @@ export function App() {
       )}
       {view === 'docs' ? (
         <Docs />
-      ) : view === 'live' ? (
+      ) : view === 'live' || view === 'habitat' ? (
         <LiveInventory />
       ) : (
         <main id="main-content" className="explorer">
