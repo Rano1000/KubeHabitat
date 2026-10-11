@@ -1,4 +1,5 @@
 import type { LiveResource, Termination } from './useClusterSnapshot'
+import { componentAppearance } from './componentAppearance'
 import {
   lifecycle,
   lifecycleExplanation,
@@ -45,6 +46,7 @@ export function LifecycleEvidence({
   onSelect: (id: string) => void
 }) {
   const state = lifecycle(resource, fresh(resource))
+  const appearance = componentAppearance(resource, children, fresh)
   const issues = children.filter((c) =>
     ['failed', 'waiting', 'not-ready', 'unknown'].includes(lifecycle(c, fresh(c))),
   )
@@ -55,6 +57,33 @@ export function LifecycleEvidence({
         <h4>{lifecycleLabels[state]}</h4>
       </div>
       <p>{lifecycleExplanation(resource, fresh(resource))}</p>
+      {resource.kind === 'Pod' && (
+        <p className="component-colour-note">
+          <strong>
+            Shell colour:{' '}
+            {appearance.containerImpact ? 'normal · container issue' : appearance.label}.
+          </strong>{' '}
+          {appearance.containerImpact
+            ? 'Kubernetes attributes the readiness or initialization warning to containers. The affected container carries the alert colour; Pod Ready remains false and floating motion stays paused.'
+            : 'The shell follows pod-level evidence. Each container keeps its own status colour.'}
+        </p>
+      )}
+      {resource.kind === 'Container' && (
+        <p className="scope-note">
+          <strong>
+            Container colour:{' '}
+            {appearance.tone === 'danger'
+              ? 'red'
+              : appearance.tone === 'warning'
+                ? 'yellow'
+                : appearance.tone}{' '}
+            · {appearance.label}.
+          </strong>{' '}
+          This colour belongs to this container only. Red marks a failed exit or active crash loop;
+          yellow marks waiting or not-ready status. Previous exits do not recolour a recovered
+          container.
+        </p>
+      )}
       <dl>
         <div>
           <dt>Evidence source</dt>

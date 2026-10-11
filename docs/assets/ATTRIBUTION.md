@@ -38,3 +38,7 @@ illustrates configured destinations and does not display measured traffic or sec
 `lifecycle-evidence.svg` is original source-authored KubeHabitat artwork explaining observed states
 and inspectable evidence. Its ready-pod animation respects reduced motion. It is explanatory
 artwork, not measured data or a live screenshot.
+
+`component-signals.svg` is original source-authored KubeHabitat artwork explaining independent
+pod-shell and container alert colours. Its gentle alert animation respects reduced motion. It
+illustrates colour rules, not measured data or a live screenshot.

@@ -60,7 +60,13 @@ test('live inventory inspects real identities without substituting demo componen
   const inventory = page.getByRole('complementary', { name: 'Live resource inventory' })
   const details = page.getByRole('complementary', { name: 'Live component details' })
   await inventory.getByRole('button', { name: /real-worker Pod/ }).click()
+  await expect(
+    details.getByText('Shell colour: normal · container issue.', { exact: true }),
+  ).toBeVisible()
   await details.getByRole('button', { name: 'worker', exact: true }).click()
+  await expect(
+    details.getByText('Container colour: red · Crash loop.', { exact: true }),
+  ).toBeVisible()
   await details.getByText('Identity, placement & observation', { exact: true }).click()
   await expect(
     details.locator('.identity-disclosure').getByText('CrashLoopBackOff', { exact: true }),

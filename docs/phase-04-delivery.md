@@ -15,6 +15,9 @@ a complete incident investigation or replay milestone.
   across connection gaps, incomplete synchronization and observer-session changes.
 - Suggested next checks labelled guidance, with no inferred crash from disappearance or inferred
   replacement from matching names.
+- Independent pod-shell and container alert colours. A fresh child issue attributed by Kubernetes
+  readiness or initialization conditions leaves the shell normal unless independent pod evidence is
+  present. Actual Pod Ready and investigation counts remain unchanged.
 
 ## Validation
 
@@ -33,6 +36,13 @@ Automated browser checks were attempted with installed Edge, but Windows sandbox
 failed before application assertions. Browser assertions are therefore unverified locally. The
 existing live lab endpoint was unreachable from the command session; live scenario acceptance is
 still pending.
+
+The component-colour follow-up passes all 42 frontend model tests, including crash loops, healthy
+siblings, pod scheduling and sandbox blockers, init containers and stale child evidence. Browser
+fixtures assert the normal shell and red crash-loop container independently. The running local lab
+was subsequently inspected in the app: its recovered application container showed the current Ready
+state separately from one recorded restart and an earlier exit code 255 with reason Unknown. This
+does not validate a currently failing live workload; the full live fault matrix remains pending.
 
 ## Still open
 

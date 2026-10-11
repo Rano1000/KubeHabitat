@@ -1,6 +1,7 @@
 import progressiveExploration from '../../docs/assets/progressive-exploration.svg'
 import themeHabitats from '../../docs/assets/theme-habitats.svg'
 import lifecycleEvidence from '../../docs/assets/lifecycle-evidence.svg'
+import componentSignals from '../../docs/assets/component-signals.svg'
 
 const phases = [
   [
@@ -77,6 +78,25 @@ export function Docs() {
         </p>
       </div>
       <div className="docs-grid">
+        <section className="doc-card wide">
+          <span className="eyebrow">COMPONENT ALERTS / POD AND CONTAINER</span>
+          <h2>Find the affected component.</h2>
+          <img
+            src={componentSignals}
+            alt="A container-only issue colours the affected box inside a normal pod shell. A pod-level issue colours the shell while containers keep their own colours."
+            style={{ width: '100%' }}
+          />
+          <p>
+            A failed exit or active crash loop makes that container red. Other waiting and readiness
+            issues make it yellow. A pod-level failure makes the shell red; scheduling and sandbox
+            startup issues make it yellow. Each container keeps its own observed state.
+          </p>
+          <p>
+            With confirmed container-only readiness or initialization issues, the shell stays
+            normal. This does not mean Pod Ready is true: inspect the readiness evidence, and
+            floating motion pauses while Pod Ready is false. Missing evidence stays unknown.
+          </p>
+        </section>
         <section className="doc-card wide">
           <span className="eyebrow">LIFECYCLE / EVIDENCE FIRST</span>
           <h2>See the signal. Inspect the facts.</h2>

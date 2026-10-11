@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 340" role="img" aria-labelledby="title description">
+  <title id="title">The alert belongs to the affected component</title>
+  <desc id="description">A container crash leaves the pod shell normal and colours only the affected box red. A failed pod colours the shell red while healthy containers keep their own colours. Readiness is reported separately.</desc>
+  <style>text{font-family:system-ui,sans-serif;fill:#243d50}.note{font-size:15px;fill:#526b7c}.pulse{animation:pulse 4s ease-in-out infinite}@keyframes pulse{50%{opacity:.65}}@media(prefers-reduced-motion:reduce){.pulse{animation:none}}</style>
+  <rect width="960" height="340" rx="20" fill="#eef5f9"/>
+  <text x="32" y="38" font-size="13" letter-spacing="2">KUBEHABITAT / COMPONENT COLOURS</text>
+  <text x="32" y="73" font-size="26" font-weight="700">The alert belongs to the affected component.</text>
+  <rect x="24" y="95" width="448" height="192" rx="14" fill="white"/>
+  <rect x="488" y="95" width="448" height="192" rx="14" fill="white"/>
+  <g transform="translate(124 188)">
+    <path d="M0-61l58 30v63L0 63l-58-31v-63zM-58-31L0 0l58-31M0 0v63M0-61v61" fill="#def4ed" stroke="#318b7e" stroke-width="3"/>
+    <g fill="#73bcae" stroke="#24796e" stroke-width="1.5"><path d="M-36-18l20-11 20 11v27l-20 11-20-11z"/></g>
+    <g class="pulse" fill="#ee9f97" stroke="#bc4841" stroke-width="2"><path d="M9 4l20-11 20 11v27L29 42 9 31z"/></g>
+    <text x="29" y="27" text-anchor="middle" font-size="25" font-weight="700" style="fill:#912c26">×</text>
+  </g>
+  <text x="216" y="140" font-size="19" font-weight="650">Container issue</text>
+  <text x="216" y="170" class="note">Normal pod shell</text>
+  <text x="216" y="194" class="note">Red: failed exit / crash loop</text>
+  <text x="216" y="218" class="note">Yellow: waiting / not ready</text>
+  <text x="216" y="252" font-size="13">Pod Ready may still be false.</text>
+  <g transform="translate(588 188)">
+    <path class="pulse" d="M0-61l58 30v63L0 63l-58-31v-63zM-58-31L0 0l58-31M0 0v63M0-61v61" fill="#fff1ee" stroke="#bc4841" stroke-width="3"/>
+    <g fill="#73bcae" stroke="#24796e" stroke-width="1.5"><path d="M-36-18l20-11 20 11v27l-20 11-20-11zM9 4l20-11 20 11v27L29 42 9 31z"/></g>
+  </g>
+  <text x="680" y="140" font-size="19" font-weight="650">Pod-level issue</text>
+  <text x="680" y="170" class="note">Red shell: pod Failed</text>
+  <text x="680" y="194" class="note">Yellow shell: pod blocker</text>
+  <text x="680" y="218" class="note">Containers keep own colours</text>
+  <text x="680" y="252" font-size="13">Click either component for evidence.</text>
+  <text x="32" y="318" class="note">Illustration only · Colour localizes observed symptoms; it does not prove a root cause. Unknown observations stay grey.</text>
+</svg>

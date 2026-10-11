@@ -22,6 +22,8 @@ import { ThemeContext, themes, useTheme } from './themes'
 import type { ThemeId } from './themes'
 import { ClusterStructure, PodShell, SoftBox } from './ThemeGeometry'
 import { lifecycle, lifecycleLabels, lifecycleMarks } from './lifecycle'
+import { componentAppearance } from './componentAppearance'
+import type { ComponentAppearance } from './componentAppearance'
 
 type Props = {
   theme?: ThemeId
@@ -362,19 +364,26 @@ function Infrastructure({
   )
 }
 
+function appearanceColor(appearance: ComponentAppearance, theme: ThemeId) {
+  const palette = themes[theme]
+  return appearance.tone === 'unknown'
+    ? palette.unknown
+    : appearance.tone === 'danger'
+      ? palette.danger
+      : appearance.tone === 'normal'
+        ? palette.ready
+        : appearance.tone === 'complete'
+          ? palette.complete
+          : palette.warning
+}
+
 function color(resource: LiveResource, fresh: boolean, theme: ThemeId = 'midnight') {
   const palette = themes[theme]
   if (['Pod', 'Container'].includes(resource.kind)) {
-    const state = lifecycle(resource, fresh)
-    return state === 'unknown'
-      ? palette.unknown
-      : state === 'failed'
-        ? palette.danger
-        : state === 'ready'
-          ? palette.ready
-          : state === 'completed'
-            ? palette.complete
-            : palette.warning
+    return appearanceColor(
+      componentAppearance(resource, [], () => fresh),
+      theme,
+    )
   }
   if (!fresh || resource.state === 'Unknown') return palette.unknown
   if (resource.state === 'Failed') return palette.danger
@@ -574,6 +583,11 @@ function Pod({
   const group = useRef<Group>(null)
   const resource = pod.resource
   const state = lifecycle(resource, props.fresh(resource))
+  const appearance = componentAppearance(
+    resource,
+    pod.containers.map((c) => c.resource),
+    props.fresh,
+  )
   const alive =
     props.fresh(resource) &&
     resource.ready === true &&
@@ -598,7 +612,7 @@ function Pod({
     props.onSelect(inner ? String(inner.object.userData.resourceId) : resource.id)
   }
   const theme = props.theme ?? 'midnight'
-  const tint = color(resource, props.fresh(resource), theme)
+  const tint = appearanceColor(appearance, theme)
   const services = podServices(props.layout, resource.id)
   const ns = props.layout.resources.find(
     (r) => r.kind === 'Namespace' && r.name === resource.namespace,
@@ -708,7 +722,11 @@ function Pod({
         ))}
         {state !== 'ready' && (
           <Label
-            text={`${lifecycleMarks[state]} ${lifecycleLabels[state]}`}
+            text={
+              appearance.containerImpact
+                ? 'Container issue ↓'
+                : `${lifecycleMarks[state]} ${lifecycleLabels[state]}`
+            }
             position={[0, -pod.radius - 0.18, 0]}
             width={1.6}
             onClick={choosePod}
@@ -721,7 +739,11 @@ function Pod({
             return (
               <Label
                 key={`state:${c.resource.id}`}
-                text={lifecycleMarks[childState]}
+                text={
+                  componentAppearance(c.resource, [], props.fresh).tone === 'danger'
+                    ? '×'
+                    : lifecycleMarks[childState]
+                }
                 position={[c.offset[0], c.offset[1] + 0.34, c.offset[2]]}
                 width={0.35}
                 onClick={(event) => {
@@ -734,7 +756,7 @@ function Pod({
         {props.selected === resource.id ||
         pod.containers.some((c) => c.resource.id === props.selected) ? (
           <Label
-            text={`${resource.name}\n${lifecycleLabels[state]}`}
+            text={`${resource.name}\n${appearance.label}`}
             position={[0, pod.radius + 0.4, 0]}
             width={3.2}
           />

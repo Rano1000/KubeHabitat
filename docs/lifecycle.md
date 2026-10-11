@@ -7,19 +7,38 @@ names the Kubernetes status source, and shows the observation time. Container de
 current run from the previous termination. A ready container can still have an earlier `OOMKilled`
 exit; that historical fact does not make its current state failed.
 
-| Signal              | Visual behaviour                        | Evidence required                                         |
-| ------------------- | --------------------------------------- | --------------------------------------------------------- |
-| Ready               | Pod floats and rotates                  | Fresh Pod Ready observation                               |
-| Waiting / not ready | Stationary, amber; `…` or `!` marker    | Waiting state or false readiness                          |
-| Completed           | Stationary, blue; `✓` marker            | Pod Succeeded or container exit code 0                    |
-| Failed              | Red `×`; failed pod has floor fragments | Pod Failed or nonzero container exit code                 |
-| Deletion requested  | Stationary `↓` marker                   | Deletion timestamp / Terminating state                    |
-| Unknown             | Stationary `?` marker                   | Missing status, incomplete sync or unavailable visibility |
+| Signal              | Visual behaviour                                        | Evidence required                                         |
+| ------------------- | ------------------------------------------------------- | --------------------------------------------------------- |
+| Ready               | Pod floats and rotates                                  | Fresh Pod Ready observation                               |
+| Waiting / not ready | Stationary; affected component amber; `…` or `!` marker | Waiting state or false readiness                          |
+| Completed           | Stationary, blue; `✓` marker                            | Pod Succeeded or container exit code 0                    |
+| Failed              | Red `×`; failed pod has floor fragments                 | Pod Failed or nonzero container exit code                 |
+| Deletion requested  | Stationary `↓` marker                                   | Deletion timestamp / Terminating state                    |
+| Unknown             | Stationary `?` marker                                   | Missing status, incomplete sync or unavailable visibility |
 
 Floor fragments belong to a **currently observed failed pod**, not a disappeared object or a
 container restart. Container symbols remain independently selectable inside the pod. Theme forms and
 uniforms remain unchanged; each theme uses its own existing health palette. Pause and reduced motion
 keep the same evidence and symbols visible.
+
+## Pod shell and container alerts
+
+![A container fault changes the affected box; a pod fault changes the shell](assets/component-signals.svg)
+
+Container colours are independent. A failed exit or active `CrashLoopBackOff` is red; other waiting
+states and false container readiness are yellow. A recovered container keeps its normal colour, even
+if Kubernetes retains a previous failed exit. A failed pod does not automatically recolour its
+containers.
+
+When Kubernetes reports `ContainersNotReady`, and a fresh child container has a current issue, the
+shell stays normal unless independent pod-level evidence is present. The same applies to an observed
+init-container issue with `ContainersNotInitialized`. Scheduling, sandbox startup, independent
+readiness gates and Pod status reasons retain the shell's warning. A Failed pod has a red shell.
+Missing or stale child evidence cannot clear a pod warning.
+
+**Normal shell colour describes the component carrying the alert; it does not mean Pod Ready is
+true.** Readiness stays unchanged in the inspector, unhealthy children remain in investigation
+counts, and Pod Ready=false pauses floating motion. Unknown observations stay grey.
 
 ## Read a restart correctly
 
