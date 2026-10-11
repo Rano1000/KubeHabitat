@@ -86,7 +86,8 @@ documented.
 See the [investigation guide](investigation.md) and
 [Phase 05 delivery record](phase-05-delivery.md). On-demand events and current/previous container
 logs are implemented with explicit permissions, retention limits and UID checks. Combined live
-lifecycle acceptance remains required.
+lifecycle fault checks pass; a follow-up recovery rerun remains required for runtime log
+unavailability.
 
 Attach conditions, events, and retrievable logs. Explain confirmed symptoms, label inference, and
 show provenance/freshness.

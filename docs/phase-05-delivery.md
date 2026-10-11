@@ -25,12 +25,25 @@ build, frontend production build, formatting and 112 local documentation links p
 installed all five scenarios; kubectl confirmed waiting, scheduling, failure and completion states,
 with one healthy sibling beside the restarting container.
 
-All nine local browser integration cases failed during Edge launch before application assertions;
-Windows sandbox named-pipe/profile errors prevented launch. A temporary backend on port 19996 was
-also unreachable from the separate command session and was stopped. The user preview was restored
-once but later stopped responding during reload. The updated Phase 05 backend must be restarted in
-regular PowerShell before combined API checks and visual acceptance can finish. Recovery acceptance
-also remains pending. These environment failures are not passing application tests.
+The published initial delivery passed every step of the
+[GitHub workflow](https://github.com/Rano1000/KubeHabitat/actions/runs/38137581484), including
+Chromium browser integration. Local Edge launch remains blocked by Windows sandbox
+named-pipe/profile errors; those failed launches are not passing application tests.
+
+The restarted user preview passed all ten real-cluster fault checks: independent pod/container
+colours, scheduling, image waiting, failure, completion, exact-UID events and previous failure logs.
+In-app inspection confirmed the normal pod shell alongside a red crashing container, reported
+BackOff events and previous exit-42 logs. Recovery retained the pod UID, restored both containers to
+Running/Ready, and returned the recovery message in current logs with historical exit 42 intact.
+
+The first recovery run passed ten of eleven checks. Its remaining check exposed a kubelet runtime
+failure returned in an HTTP-success log body, also reproduced using kubectl. The follow-up
+classifies that known un-timestamped response as unavailable without exposing runtime IDs or hiding
+timestamped application messages. Go tests/vet/build and nine lab/evidence tests pass for this fix.
+A full recovery rerun against the updated running binary remains required; previous logs are no
+longer retrievable. Recovery acceptance now requires a fully passing fault report for the same UID
+before accepting explicit previous-log unavailability. It still requires current recovery logs and
+historical exit 42.
 
 ## Limits
 

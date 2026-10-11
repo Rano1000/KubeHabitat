@@ -112,6 +112,26 @@ func TestLogsNeverReturnAReplacementPodsBody(t *testing.T) {
 	}
 }
 
+func TestRuntimeLogErrorBodyIsUnavailableWithoutHidingApplicationMessages(t *testing.T) {
+	for _, body := range []string{
+		"unable to retrieve container logs for containerd://runtime-id\n",
+		"2026-10-11T12:00:00Z unable to retrieve container logs for containerd://runtime-id\n",
+	} {
+		store, _, _, id := evidenceFixture(t)
+		store.logReader = func(context.Context, string, string, *corev1.PodLogOptions) (io.ReadCloser, error) {
+			return io.NopCloser(strings.NewReader(body)), nil
+		}
+		got := store.ReadLogs(context.Background(), id, true)
+		if strings.HasPrefix(body, "2026-") {
+			if got.State != "available" || got.Text != body {
+				t.Fatal("timestamped application log was hidden")
+			}
+		} else if got.State != "unavailable" || got.Text != "" || strings.Contains(got.Reason, "runtime-id") {
+			t.Fatal("runtime failure was presented as application logs or leaked runtime identity")
+		}
+	}
+}
+
 func TestMissingPreviousLogsAndDeletedPodAreExplicit(t *testing.T) {
 	store, client, pod, id := evidenceFixture(t)
 	store.logReader = func(context.Context, string, string, *corev1.PodLogOptions) (io.ReadCloser, error) {

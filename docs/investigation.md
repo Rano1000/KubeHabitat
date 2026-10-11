@@ -38,6 +38,10 @@ body. The log API has no atomic UID precondition, so these checks do not make in
 atomic. Container runs can restart during retrieval. Previous logs can rotate away, and deleted pod
 logs may be unavailable. Missing evidence is explicit.
 
+A known un-timestamped kubelet runtime failure body is also classified as unavailable, even if the
+log endpoint returns HTTP success. Timestamped application lines with similar wording are preserved.
+This recognizes one specific response shape, not every possible runtime error.
+
 Logs and event messages may contain sensitive values and are not automatically redacted. Intentional
 evidence reads are rendered as plain text, strip terminal controls, return
 `Cache-Control: no-store`, and are not persisted by KubeHabitat. Keep the unauthenticated preview on
@@ -77,6 +81,8 @@ node scripts/investigation-lab.mjs check --port 19096
 ```
 
 Local reports contain assertions, timestamps and pod UID, with no event messages or log bodies.
+Recovery accepts explicitly unavailable previous logs only when a prior fault report verified those
+logs for the same pod UID. It still requires current recovery logs and historical exit 42.
 Re-running prepare resets the recovery gate to the fault scenario. To remove the deliberate
 workloads, verify the namespace ownership label is `kubehabitat-test-lab`, then delete only
 `habitat-investigation`. The separate optional Role in `habitat-lab` remains installed.

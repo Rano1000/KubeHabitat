@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { componentAppearance } from '../frontend/src/componentAppearance.ts'
+import { previousFailureVerified } from './investigation-evidence.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 const ns = 'habitat-investigation'
@@ -191,11 +192,21 @@ if (action === 'prepare') {
   const logs = await fetchJSON(
     `/api/v1/logs?resource=${encodeURIComponent(crashing.id)}&previous=true`,
   )
+  // Recovery can outlive the runtime's previous-log retention. Require a passing
+  // fault-run report for this exact UID before accepting explicit unavailability.
+  let prior
+  if (recovering) {
+    try {
+      prior = JSON.parse(readFileSync(path.join(state, 'investigation-faults-checks.json'), 'utf8'))
+    } catch {
+      /* No prior report: unavailable logs cannot pass recovery acceptance. */
+    }
+  }
   check(
-    'previous failed run logs available',
-    logs.state === 'available' &&
-      logs.podUid === split.uid &&
-      logs.text?.includes('Deliberate acceptance failure: exit 42'),
+    recovering
+      ? 'previous failure logs retained or explicitly unavailable after verified fault run'
+      : 'previous failed run logs available',
+    previousFailureVerified(logs, split.uid, recovering, prior),
   )
   if (recovering) {
     const current = await fetchJSON(

@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -19,6 +20,10 @@ import (
 const LogByteLimit int64 = 64 * 1024
 const LogTailLines int64 = 200
 const LogSinceSeconds int64 = 15 * 60
+
+// Kubelet can return this un-timestamped runtime error in an HTTP-success body.
+// Timestamped application messages containing the same words remain ordinary logs.
+var runtimeLogFailure = regexp.MustCompile(`^unable to retrieve container logs for [A-Za-z0-9_-]+://[A-Za-z0-9_.-]+$`)
 
 type EvidenceStatus struct {
 	State  string `json:"state"`
@@ -265,6 +270,10 @@ func (s *Store) ReadLogs(ctx context.Context, id string, previous bool) LogEvide
 	// The name-addressed logs API has no UID precondition. Verify again after retrieval.
 	result.EvidenceStatus = podIdentity(ctx, client, pod)
 	if result.State != "available" {
+		return result
+	}
+	if runtimeLogFailure.MatchString(strings.TrimSpace(string(body))) {
+		result.EvidenceStatus = EvidenceStatus{"unavailable", "Kubernetes could not retrieve this container run from its runtime. Its logs may no longer be retained; retry to check availability."}
 		return result
 	}
 	result.Truncated = int64(len(body)) >= LogByteLimit

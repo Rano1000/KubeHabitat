@@ -41,6 +41,7 @@ function scenario(name, inspect) {
       mkdirSync(path.join(temporary, dir), { recursive: true })
     for (const file of [
       'scripts/investigation-lab.mjs',
+      'scripts/investigation-evidence.mjs',
       'frontend/src/componentAppearance.ts',
       'frontend/src/lifecycle.ts',
       'deploy/rbac-investigation.yaml',
