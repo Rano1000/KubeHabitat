@@ -62,7 +62,9 @@ test('live inventory inspects real identities without substituting demo componen
   await inventory.getByRole('button', { name: /real-worker Pod/ }).click()
   await details.getByRole('button', { name: 'worker', exact: true }).click()
   await details.getByText('Identity, placement & observation', { exact: true }).click()
-  await expect(details.getByText('CrashLoopBackOff', { exact: true })).toBeVisible()
+  await expect(
+    details.locator('.identity-disclosure').getByText('CrashLoopBackOff', { exact: true }),
+  ).toBeVisible()
   await expect(details.getByText('observed-uid', { exact: true })).toBeVisible()
   await details.getByRole('button', { name: 'real-worker' }).click()
   await expect(details.getByText('Running', { exact: true })).toBeVisible()
@@ -75,6 +77,40 @@ test('live inventory inspects real identities without substituting demo componen
   await expect(
     details.getByText('No crash or replacement has been inferred.', { exact: false }),
   ).toBeVisible()
+})
+
+test('lifecycle evidence distinguishes recovered container history from current completion', async ({
+  page,
+}) => {
+  const current = snapshot()
+  Object.assign(current.resources[1], {
+    state: 'Running',
+    ready: true,
+    reason: undefined,
+    lastTermination: { reason: 'OOMKilled', exitCode: 137, finishedAt: current.generatedAt },
+  })
+  await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: current }))
+  await page.goto('/#live')
+  await page.getByRole('button', { name: /real-worker Pod/ }).click()
+  const details = page.getByRole('complementary', { name: 'Live component details' })
+  await details.getByRole('button', { name: 'worker', exact: true }).click()
+  const evidence = details.getByRole('region', { name: 'Lifecycle evidence' })
+  await expect(evidence.getByRole('heading', { name: 'Ready', exact: true })).toBeVisible()
+  await expect(evidence.getByText('Previous termination · historical status')).toBeVisible()
+  await expect(evidence.getByText('OOMKilled', { exact: true })).toBeVisible()
+  await expect(evidence.getByText('137', { exact: true })).toBeVisible()
+  current.revision++
+  Object.assign(current.resources[1], {
+    state: 'Terminated',
+    ready: false,
+    exitCode: 0,
+    reason: 'Completed',
+    termination: { exitCode: 0, reason: 'Completed', finishedAt: current.generatedAt },
+  })
+  await expect(evidence.getByRole('heading', { name: 'Completed', exact: true })).toBeVisible({
+    timeout: 8000,
+  })
+  await expect(evidence.getByText('Current termination', { exact: true })).toBeVisible()
 })
 
 test('API failures retain cached objects and replace health verdicts with unknown freshness', async ({

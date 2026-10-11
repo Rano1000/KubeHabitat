@@ -14,6 +14,22 @@ func base(kind string, meta metav1.ObjectMeta, now time.Time) Resource {
 		ObservedAt: now, State: "Unknown", Deleting: meta.DeletionTimestamp != nil}
 }
 
+func statusTime(value metav1.Time) *time.Time {
+	if value.IsZero() {
+		return nil
+	}
+	result := value.Time.UTC()
+	return &result
+}
+
+func termination(value *corev1.ContainerStateTerminated) *Termination {
+	if value == nil {
+		return nil
+	}
+	return &Termination{Reason: value.Reason, ExitCode: value.ExitCode,
+		StartedAt: statusTime(value.StartedAt), FinishedAt: statusTime(value.FinishedAt)}
+}
+
 func project(obj any, now time.Time) []Resource {
 	switch value := obj.(type) {
 	case *corev1.Node:
@@ -54,6 +70,7 @@ func project(obj any, now time.Time) []Resource {
 		}
 		r.Labels = value.Labels
 		r.Phase, r.NodeName = string(value.Status.Phase), value.Spec.NodeName
+		r.Reason = value.Status.Reason
 		for _, c := range value.Status.Conditions {
 			r.Conditions = append(r.Conditions, Condition{string(c.Type), string(c.Status), c.Reason})
 			if c.Type == corev1.PodReady && c.Status != corev1.ConditionUnknown {
@@ -113,6 +130,7 @@ func project(obj any, now time.Time) []Resource {
 					}
 					ready, restarts := status.Ready, status.RestartCount
 					c.Ready, c.RestartCount = &ready, &restarts
+					c.LastTermination = termination(status.LastTerminationState.Terminated)
 					switch {
 					case status.State.Waiting != nil:
 						c.State, c.Reason = "Waiting", status.State.Waiting.Reason
@@ -120,8 +138,10 @@ func project(obj any, now time.Time) []Resource {
 						c.State, c.Reason = "Terminated", status.State.Terminated.Reason
 						code := status.State.Terminated.ExitCode
 						c.ExitCode = &code
+						c.Termination = termination(status.State.Terminated)
 					case status.State.Running != nil:
 						c.State = "Running"
+						c.StartedAt = statusTime(status.State.Running.StartedAt)
 					}
 					break
 				}

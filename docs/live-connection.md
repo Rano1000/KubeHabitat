@@ -86,9 +86,12 @@ current snapshot and does not infer a crash.
 
 The API exposes a selected set of fields: names, UID, resource version, observation time, node
 assignment, phase, readiness, condition types/status/reasons, container state, restart count and
-exit code. It excludes environment variables, annotations, image credentials and raw pod specs. No
-Secret API or pod log API is called. Conditions are observed facts, not a guaranteed root-cause
-diagnosis.
+exit code. Optional container `startedAt`, `termination` and `lastTermination` fields separate the
+current run from previous termination status; termination facts contain only reason, exit code and
+reported start/finish timestamps. See the [lifecycle evidence guide](lifecycle.md). It excludes
+termination messages, runtime container IDs, environment variables, annotations, image credentials
+and raw pod specs. No Secret API or pod log API is called. Conditions are observed facts, not a
+guaranteed root-cause diagnosis.
 
 ## Validation boundary
 

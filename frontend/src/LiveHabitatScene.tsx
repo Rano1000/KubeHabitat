@@ -21,6 +21,7 @@ import type { ScaleLayout, Summary, GroupPlacement } from './scaleModel'
 import { ThemeContext, themes, useTheme } from './themes'
 import type { ThemeId } from './themes'
 import { ClusterStructure, PodShell, SoftBox } from './ThemeGeometry'
+import { lifecycle, lifecycleLabels, lifecycleMarks } from './lifecycle'
 
 type Props = {
   theme?: ThemeId
@@ -363,6 +364,18 @@ function Infrastructure({
 
 function color(resource: LiveResource, fresh: boolean, theme: ThemeId = 'midnight') {
   const palette = themes[theme]
+  if (['Pod', 'Container'].includes(resource.kind)) {
+    const state = lifecycle(resource, fresh)
+    return state === 'unknown'
+      ? palette.unknown
+      : state === 'failed'
+        ? palette.danger
+        : state === 'ready'
+          ? palette.ready
+          : state === 'completed'
+            ? palette.complete
+            : palette.warning
+  }
   if (!fresh || resource.state === 'Unknown') return palette.unknown
   if (resource.state === 'Failed') return palette.danger
   if (resource.state === 'Terminated' && resource.exitCode !== undefined && resource.exitCode !== 0)
@@ -560,6 +573,7 @@ function Pod({
 }) {
   const group = useRef<Group>(null)
   const resource = pod.resource
+  const state = lifecycle(resource, props.fresh(resource))
   const alive =
     props.fresh(resource) &&
     resource.ready === true &&
@@ -606,6 +620,28 @@ function Pod({
         <ringGeometry args={[pod.radius * 0.78, pod.radius * 0.85, 40]} />
         <meshBasicMaterial color={namespaceColor(resource.namespace ?? '')} />
       </mesh>
+      {state === 'failed' && (
+        <group position={[pod.position[0], 0.18, pod.position[2]]}>
+          {[0, 1, 2, 3].map((index) => (
+            <mesh
+              key={index}
+              position={[
+                Math.cos(index * 1.7) * pod.radius * 0.7,
+                0,
+                Math.sin(index * 1.7) * pod.radius * 0.7,
+              ]}
+              rotation={[index * 0.4, index, 0.3]}
+              onClick={(event) => {
+                event.stopPropagation()
+                props.onSelect(resource.id)
+              }}
+            >
+              <tetrahedronGeometry args={[0.14, 0]} />
+              <meshStandardMaterial color={themes[theme].danger} />
+            </mesh>
+          ))}
+        </group>
+      )}
       <group ref={group} position={pod.position}>
         {services.map((service, index) => (
           <mesh
@@ -670,9 +706,38 @@ function Pod({
             />
           </mesh>
         ))}
+        {state !== 'ready' && (
+          <Label
+            text={`${lifecycleMarks[state]} ${lifecycleLabels[state]}`}
+            position={[0, -pod.radius - 0.18, 0]}
+            width={1.6}
+            onClick={choosePod}
+          />
+        )}
+        {pod.containers
+          .filter((c) => lifecycle(c.resource, props.fresh(c.resource)) !== 'ready')
+          .map((c) => {
+            const childState = lifecycle(c.resource, props.fresh(c.resource))
+            return (
+              <Label
+                key={`state:${c.resource.id}`}
+                text={lifecycleMarks[childState]}
+                position={[c.offset[0], c.offset[1] + 0.34, c.offset[2]]}
+                width={0.35}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  props.onSelect(c.resource.id)
+                }}
+              />
+            )
+          })}
         {props.selected === resource.id ||
         pod.containers.some((c) => c.resource.id === props.selected) ? (
-          <Label text={resource.name} position={[0, pod.radius + 0.35, 0]} width={3.2} />
+          <Label
+            text={`${resource.name}\n${lifecycleLabels[state]}`}
+            position={[0, pod.radius + 0.4, 0]}
+            width={3.2}
+          />
         ) : null}
       </group>
     </>

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { LiveResource } from './useClusterSnapshot'
 import type { WorkloadGroup, Summary, Activity, ScaleLayout } from './scaleModel'
-import { REPLICA_PAGE, warning } from './scaleModel'
+import { REPLICA_PAGE } from './scaleModel'
+import { needsInvestigation } from './lifecycle'
 
 export function SummaryText({ value }: { value: Summary }) {
   return (
@@ -111,7 +112,11 @@ export function WorkloadInspector({
       )}
       <div className="issue-shortcuts">
         {group.pods
-          .filter((p) => fresh(p) && (warning(p) || children.get(p.id)?.some(warning)))
+          .filter(
+            (p) =>
+              needsInvestigation(p, fresh(p)) ||
+              children.get(p.id)?.some((c) => needsInvestigation(c, fresh(c))),
+          )
           .slice(0, 8)
           .map((p) => (
             <button key={p.id} className="subtle-button" onClick={() => onSelect(p.id)}>
@@ -224,7 +229,9 @@ export function ActivityPanel({
         not incident history.
       </p>
       {activity.length === 0 && (
-        <p className="scope-note">Listening for observed pod state and inventory changes.</p>
+        <p className="scope-note">
+          Listening for observed pod states, container restarts and inventory changes.
+        </p>
       )}
       <ol>
         {activity.map((item) => (

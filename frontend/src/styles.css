@@ -1700,3 +1700,83 @@ pre {
     justify-content: space-between;
   }
 }
+.lifecycle-evidence {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid currentColor;
+  border-radius: 12px;
+}
+.lifecycle-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.lifecycle-heading h4 {
+  margin: 0;
+}
+.lifecycle-heading > span {
+  font-size: 1.4rem;
+}
+.lifecycle-ready {
+  border-left-color: var(--teal);
+}
+.lifecycle-waiting,
+.lifecycle-not-ready,
+.lifecycle-deleting {
+  border-left-color: var(--amber);
+}
+.lifecycle-failed {
+  border-left-color: #cb625b;
+}
+.lifecycle-completed {
+  border-left-color: #689fcf;
+}
+.lifecycle-unknown {
+  border-left-color: var(--muted);
+}
+.state-badge.completed {
+  color: #b9d8ff;
+  background: #253e5d;
+}
+.state-badge.failed {
+  color: #ffb5af;
+  background: #532f32;
+}
+.signal-dot.completed {
+  background: #689fcf;
+}
+.signal-dot.failed {
+  background: #cb625b;
+}
+.app:not([data-theme='midnight']) .state-badge.completed {
+  color: #285477;
+  background: #dfebfa;
+}
+.app:not([data-theme='midnight']) .state-badge.failed {
+  color: #9b302c;
+  background: #fae2df;
+}
+.lifecycle-evidence p {
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.lifecycle-evidence h5 {
+  margin: 0.8rem 0 0.5rem;
+  font-size: 0.78rem;
+}
+.lifecycle-evidence dl {
+  font-size: 0.75rem;
+}
+.lifecycle-evidence details {
+  margin-top: 0.8rem;
+  font-size: 0.78rem;
+}
+.lifecycle-children {
+  display: grid;
+  gap: 0.4rem;
+}
+.termination-facts {
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--line);
+}

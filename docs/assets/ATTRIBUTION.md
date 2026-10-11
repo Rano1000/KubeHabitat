@@ -34,3 +34,7 @@ not a live cluster screenshot.
 `service-guide-preview.png` is a screenshot of the implemented live local lab, captured on
 2026-10-11. The human Service figure uses original source-authored Three.js geometry. Its patrol
 illustrates configured destinations and does not display measured traffic or security enforcement.
+
+`lifecycle-evidence.svg` is original source-authored KubeHabitat artwork explaining observed states
+and inspectable evidence. Its ready-pod animation respects reduced motion. It is explanatory
+artwork, not measured data or a live screenshot.

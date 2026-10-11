@@ -161,7 +161,7 @@ test('browser activity never infers crashes or replacements, and suppresses reco
     resources,
     sessionId,
     generatedAt: '2026-10-11T01:00:00Z',
-    visibility: [{ kind: 'Pod', state }],
+    visibility: [{ kind: 'Pod', state, synced: true }],
   })
   assert.deepEqual(observedChanges(null, snap(1, [pod('a')])), [])
   assert.match(observedChanges(snap(1, [pod('a')]), snap(2, []))[0].message, /cause not inferred/)

@@ -25,6 +25,8 @@ import { podServices, serviceColor } from './serviceGuide'
 import { SceneBoundary } from './SceneBoundary'
 import { useMonitoringView } from './useMonitoringView'
 import { ThemeSelector, ResourceGlyph } from './themes'
+import { LifecycleEvidence } from './LifecycleEvidence'
+import { lifecycle, needsInvestigation } from './lifecycle'
 import { policyCheck } from './networkPolicy'
 import {
   overviewKinds,
@@ -121,7 +123,7 @@ export function LiveInventory() {
     if (!snapshot) return
     const before = live.resynced || live.stale ? null : previousSnapshot.current
     const changes = observedChanges(before, snapshot)
-    if (before?.sessionId !== snapshot.sessionId) setActivity([])
+    if (previousSnapshot.current?.sessionId !== snapshot.sessionId) setActivity([])
     if (changes.length) setActivity((items) => [...changes.reverse(), ...items].slice(0, 20))
     previousSnapshot.current = snapshot
   }, [snapshot, live.resynced, live.stale])
@@ -155,7 +157,8 @@ export function LiveInventory() {
     snapshot?.visibility.find(
       (v) => v.kind === (r.kind === 'Container' || r.kind === 'Volume' ? 'Pod' : r.kind),
     )
-  const fresh = (r: LiveResource) => !live.stale && visibility(r)?.state === 'observing'
+  const fresh = (r: LiveResource) =>
+    !live.stale && visibility(r)?.state === 'observing' && visibility(r)?.synced === true
   const visible = resources.filter(
     (r) =>
       (kind === 'All' || r.kind === kind) &&
@@ -169,7 +172,8 @@ export function LiveInventory() {
         !fresh(r) ||
         r.state === 'Unknown' ||
         warning(r) ||
-        (r.kind === 'Pod' && children.get(r.id)?.some(warning))) &&
+        (['Pod', 'Container'].includes(r.kind) && needsInvestigation(r, fresh(r))) ||
+        (r.kind === 'Pod' && children.get(r.id)?.some((c) => needsInvestigation(c, fresh(c))))) &&
       `${r.name} ${r.namespace ?? ''} ${r.nodeName ?? ''} ${r.kind} ${Object.entries(r.labels ?? {})
         .map(([key, value]) => `${key}=${value}`)
         .join(' ')}`
@@ -220,8 +224,13 @@ export function LiveInventory() {
     source && destination
       ? policyCheck(allResources, source, destination, networkPort, protocol, policyComplete)
       : null
-  const signal = (r: LiveResource) =>
-    !fresh(r) || r.state === 'Unknown' ? 'unknown' : warning(r) ? 'warning' : 'ready'
+  const signal = (r: LiveResource) => {
+    if (['Pod', 'Container'].includes(r.kind)) {
+      const state = lifecycle(r, fresh(r))
+      return ['waiting', 'not-ready', 'deleting'].includes(state) ? 'warning' : state
+    }
+    return !fresh(r) || r.state === 'Unknown' ? 'unknown' : warning(r) ? 'warning' : 'ready'
+  }
   const select = (id: string) => {
     if (monitoring.expanded) monitoring.setPanel('details')
     if (groups.some((g) => g.id === id)) {
@@ -910,6 +919,12 @@ export function LiveInventory() {
                 <i className="signal-dot unknown" />
                 Unknown
               </span>
+              <span>
+                <i className="signal-dot completed" />✓ Completed
+              </span>
+              <span>
+                <i className="signal-dot failed" />× Failed
+              </span>
             </div>
             <button
               className="subtle-button"
@@ -1065,6 +1080,16 @@ export function LiveInventory() {
                   Last observed state: {current.state}. This is retained data, not a current health
                   verdict.
                 </p>
+              )}
+              {['Pod', 'Container'].includes(current.kind) && (
+                <LifecycleEvidence
+                  resource={current}
+                  fresh={fresh}
+                  children={resources.filter(
+                    (r) => r.kind === 'Container' && r.parent === current.id,
+                  )}
+                  onSelect={select}
+                />
               )}
               <details className="identity-disclosure">
                 <summary>Identity, placement &amp; observation</summary>

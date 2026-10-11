@@ -12,7 +12,7 @@ throughput supports estimates.
 | 01    | Runnable foundation and contributor documentation | Verified  |
 | 02    | Read-only live Kubernetes connection              | In review |
 | 03    | Real cluster house and spatial navigation         | In review |
-| 04    | Accurate workload lifecycle animations            | Planned   |
+| 04    | Accurate workload lifecycle animations            | In review |
 | 05    | Investigation and inspectable evidence            | Planned   |
 | 06    | Metrics, ownership, services, storage             | Planned   |
 | 07    | Optional observed traffic                         | Planned   |
@@ -66,6 +66,11 @@ in a waiting area. Synchronize inventory, highlighting, guided camera, and inspe
 cluster size preserves navigation; namespace membership remains accurate across nodes.
 
 ## 04 · Lifecycle animation
+
+See the [Phase 04 delivery record](phase-04-delivery.md) and
+[lifecycle evidence guide](lifecycle.md). Initial state markers, termination evidence and observed
+restart deltas are implemented; recorded replacement timelines and persistent failure history remain
+open.
 
 Represent readiness, container waiting/restarts, pod failure, replacement, completion, deletion, and
 unknown states. Historical failure markers require recorded confirmed failures.

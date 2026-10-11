@@ -69,14 +69,17 @@ Available in this branch:
 - Go health/status and live snapshot endpoints; optional serving of the compiled frontend.
 - Read-only shared informers for nodes, namespaces and pods, with derived containers.
 - A live inventory and condition inspector with per-kind permissions, freshness and recovery.
+- Distinct workload lifecycle markers, current/previous termination evidence and observed container
+  restart changes.
 - Services, EndpointSlices, ingress routes and declared pod-to-pod NetworkPolicy checks.
 - Pod volumes, namespace claims, cluster volumes, storage classes and quota accounting.
 - Node CPU, memory and ephemeral storage capacity; optional Metrics API CPU/memory samples.
 - Contributor guides and automated build, API, browser, and documentation checks.
 
 See the [live connection guide](docs/live-connection.md) and
-[Phase 03 delivery record](docs/phase-03-delivery.md). Full lifecycle animation, investigation,
-traffic telemetry, history and packaging follow the [roadmap](docs/roadmap.md).
+[Phase 03 delivery record](docs/phase-03-delivery.md) and [lifecycle guide](docs/lifecycle.md).
+Recorded lifecycle history, investigation, traffic telemetry, history and packaging follow the
+[roadmap](docs/roadmap.md).
 
 ![Read-only live discovery architecture](docs/assets/live-discovery.svg)
 

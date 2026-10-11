@@ -1,5 +1,6 @@
 import progressiveExploration from '../../docs/assets/progressive-exploration.svg'
 import themeHabitats from '../../docs/assets/theme-habitats.svg'
+import lifecycleEvidence from '../../docs/assets/lifecycle-evidence.svg'
 
 const phases = [
   [
@@ -29,8 +30,8 @@ const phases = [
   [
     '04',
     'Workload lifecycle',
-    'Planned',
-    'Animate readiness, container restarts, pod replacement, and completion accurately.',
+    'In review',
+    'Distinct lifecycle signals, current and previous termination evidence, and observed container restarts. Recorded replacement history remains open.',
   ],
   [
     '05',
@@ -76,6 +77,25 @@ export function Docs() {
         </p>
       </div>
       <div className="docs-grid">
+        <section className="doc-card wide">
+          <span className="eyebrow">LIFECYCLE / EVIDENCE FIRST</span>
+          <h2>See the signal. Inspect the facts.</h2>
+          <img
+            src={lifecycleEvidence}
+            alt="Ready, waiting, completed and failed workloads have distinct symbols; each links to Kubernetes status evidence."
+            style={{ width: '100%' }}
+          />
+          <p>
+            Click a pod or container to inspect its current status, previous termination, exit code
+            and observation time. A restart keeps the same pod identity. Successful completion is
+            not a crash. Connection gaps stay unknown.
+          </p>
+          <p>
+            Floor fragments mark a currently observed failed pod. The last 20 browser activity
+            entries include container state and restart changes; durable incident replay, Events and
+            logs remain planned.
+          </p>
+        </section>
         <section className="doc-card wide">
           <span className="eyebrow">THREE VISUAL WORLDS / ONE LIVE CLUSTER</span>
           <h2>Choose your habitat.</h2>

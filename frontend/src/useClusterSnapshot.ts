@@ -33,6 +33,12 @@ export type Policy = {
   egress?: PolicyRule[]
 }
 export type LiveKind = (typeof liveKinds)[number]
+export type Termination = {
+  reason?: string
+  exitCode: number
+  startedAt?: string
+  finishedAt?: string
+}
 export type LiveResource = {
   id: string
   uid: string
@@ -50,6 +56,9 @@ export type LiveResource = {
   containerType?: string
   reason?: string
   exitCode?: number
+  startedAt?: string
+  termination?: Termination
+  lastTermination?: Termination
   deleting?: boolean
   conditions?: { type: string; status: string; reason?: string }[]
   labels?: Record<string, string>
@@ -231,6 +240,20 @@ export function parseSnapshot(value: unknown): ClusterSnapshot {
       throw new Error('Invalid restart count')
     if (r.exitCode !== undefined && !Number.isInteger(r.exitCode))
       throw new Error('Invalid exit code')
+    if (r.startedAt !== undefined && !date(r.startedAt)) throw new Error('Invalid start time')
+    for (const field of ['termination', 'lastTermination']) {
+      const evidence = r[field]
+      if (
+        evidence !== undefined &&
+        (!record(evidence) ||
+          !Number.isInteger(evidence.exitCode) ||
+          (evidence.reason !== undefined && typeof evidence.reason !== 'string') ||
+          ['startedAt', 'finishedAt'].some(
+            (key) => evidence[key] !== undefined && !date(evidence[key]),
+          ))
+      )
+        throw new Error('Invalid termination evidence')
+    }
     if (
       r.conditions !== undefined &&
       (!Array.isArray(r.conditions) ||

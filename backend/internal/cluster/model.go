@@ -9,6 +9,14 @@ type Condition struct {
 	Reason string `json:"reason,omitempty"`
 }
 
+// Termination is status evidence, never a log or a termination message.
+type Termination struct {
+	Reason     string     `json:"reason,omitempty"`
+	ExitCode   int32      `json:"exitCode"`
+	StartedAt  *time.Time `json:"startedAt,omitempty"`
+	FinishedAt *time.Time `json:"finishedAt,omitempty"`
+}
+
 // Resource contains only the fields needed for inventory and visual state.
 // Pod specs, environment variables, annotations, and Secret payloads are never serialized.
 type Resource struct {
@@ -28,6 +36,9 @@ type Resource struct {
 	ContainerType   string            `json:"containerType,omitempty"`
 	Reason          string            `json:"reason,omitempty"`
 	ExitCode        *int32            `json:"exitCode,omitempty"`
+	StartedAt       *time.Time        `json:"startedAt,omitempty"`
+	Termination     *Termination      `json:"termination,omitempty"`
+	LastTermination *Termination      `json:"lastTermination,omitempty"`
 	Deleting        bool              `json:"deleting,omitempty"`
 	Conditions      []Condition       `json:"conditions,omitempty"`
 	Labels          map[string]string `json:"labels,omitempty"`

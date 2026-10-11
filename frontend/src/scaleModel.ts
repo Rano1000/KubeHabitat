@@ -2,6 +2,7 @@ import type { LiveResource, ClusterSnapshot } from './useClusterSnapshot'
 import { buildHabitatLayout } from './habitatLayout.ts'
 import { matches } from './networkPolicy.ts'
 import { servicePatrol } from './serviceGuide.ts'
+import { lifecycle } from './lifecycle.ts'
 import type { HabitatLayout, Point } from './habitatLayout'
 
 export const REPLICA_PAGE = 48
@@ -93,9 +94,14 @@ export function healthSummary(
   for (const pod of pods) {
     const containers = children.get(pod.id) ?? []
     if (!fresh(pod) || containers.some((c) => !fresh(c))) result.unknown++
-    else if (warning(pod) || containers.some(warning)) result.warning++
-    else if (pod.state === 'Completed') result.completed++
-    else if (pod.ready === true && pod.state === 'Ready' && !pod.deleting) result.ready++
+    else if (lifecycle(pod, true) === 'completed') result.completed++
+    else if (warning(pod) || containers.some(warning) || pod.deleting) result.warning++
+    else if (
+      lifecycle(pod, true) === 'unknown' ||
+      containers.some((c) => lifecycle(c, true) === 'unknown')
+    )
+      result.unknown++
+    else if (pod.ready === true && pod.state === 'Ready') result.ready++
     else result.unknown++
   }
   return result
@@ -267,36 +273,69 @@ export function scalableLayout(
 
 export type Activity = { id: string; resourceId: string; name: string; message: string; at: string }
 export function observedChanges(before: ClusterSnapshot | null, next: ClusterSnapshot): Activity[] {
-  if (!before || before.sessionId !== next.sessionId) return []
-  const old = new Map(before.resources.filter((r) => r.kind === 'Pod').map((r) => [r.id, r]))
+  if (!before || before.sessionId !== next.sessionId || next.revision <= before.revision) return []
+  const old = new Map(
+    before.resources.filter((r) => ['Pod', 'Container'].includes(r.kind)).map((r) => [r.id, r]),
+  )
   const changes: Activity[] = []
-  const podVisible = next.visibility.find((v) => v.kind === 'Pod')?.state === 'observing'
-  if (!podVisible || before.visibility.find((v) => v.kind === 'Pod')?.state !== 'observing')
+  const identities = new Map([...before.resources, ...next.resources].map((r) => [r.id, r]))
+  if (
+    ![before, next].every((s) =>
+      s.visibility.some((v) => v.kind === 'Pod' && v.state === 'observing' && v.synced),
+    )
+  )
     return []
-  for (const pod of next.resources.filter((r) => r.kind === 'Pod')) {
-    const previous = old.get(pod.id)
-    old.delete(pod.id)
-    const message = !previous
-      ? 'Appeared in observed inventory'
-      : previous.state !== pod.state
-        ? `Observed state: ${previous.state} → ${pod.state}`
-        : ''
-    if (message)
-      changes.push({
-        id: `${next.revision}:${pod.id}`,
-        resourceId: pod.id,
-        name: `${pod.namespace}/${pod.name}`,
-        message,
-        at: next.generatedAt,
-      })
-  }
-  for (const pod of old.values())
+  function add(resource: LiveResource, event: string, message: string) {
+    const parent = resource.parent ? identities.get(resource.parent) : undefined
     changes.push({
-      id: `${next.revision}:${pod.id}`,
-      resourceId: pod.id,
-      name: `${pod.namespace}/${pod.name}`,
-      message: 'Left observed inventory; cause not inferred',
+      id: `${next.revision}:${resource.id}:${event}`,
+      resourceId: resource.id,
+      name: `${resource.namespace}/${parent ? `${parent.name}/` : ''}${resource.name}`,
+      message,
       at: next.generatedAt,
     })
+  }
+  for (const resource of next.resources.filter((r) => ['Pod', 'Container'].includes(r.kind))) {
+    const previous = old.get(resource.id)
+    old.delete(resource.id)
+    if (!previous) {
+      if (resource.kind === 'Pod')
+        add(
+          resource,
+          'appeared',
+          'Appeared in observed inventory · new pod UID; replacement not inferred',
+        )
+      continue
+    }
+    if (
+      previous.state !== resource.state ||
+      previous.reason !== resource.reason ||
+      previous.ready !== resource.ready ||
+      previous.deleting !== resource.deleting
+    )
+      add(
+        resource,
+        'state',
+        `Observed state: ${previous.state} → ${resource.state}${resource.reason ? ` · ${resource.reason}` : ''}${resource.ready !== undefined ? ` · ready ${resource.ready}` : ''}${resource.deleting ? ' · deletion requested' : ''}`,
+      )
+    if (
+      resource.kind === 'Container' &&
+      previous.restartCount !== undefined &&
+      resource.restartCount !== undefined &&
+      previous.restartCount !== resource.restartCount
+    ) {
+      const delta = resource.restartCount - previous.restartCount
+      add(
+        resource,
+        'restarts',
+        delta > 0
+          ? `Restart count increased by ${delta} (${previous.restartCount} → ${resource.restartCount}) · same pod UID${resource.lastTermination?.reason ? ` · previous exit ${resource.lastTermination.reason}` : ''}`
+          : `Restart count decreased (${previous.restartCount} → ${resource.restartCount}) · status discontinuity; no new restart inferred`,
+      )
+    }
+  }
+  for (const resource of old.values())
+    if (resource.kind === 'Pod')
+      add(resource, 'left', 'Left observed inventory; cause not inferred')
   return changes
 }
