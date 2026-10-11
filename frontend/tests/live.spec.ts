@@ -192,7 +192,11 @@ test('live inventory inspects real identities without substituting demo componen
     details.locator('.identity-disclosure').getByText('CrashLoopBackOff', { exact: true }),
   ).toBeVisible()
   await expect(details.getByText('observed-uid', { exact: true })).toBeVisible()
-  await details.getByRole('button', { name: 'real-worker' }).click()
+  await details
+    .locator('details')
+    .filter({ has: page.getByText('Identity, placement & observation', { exact: true }) })
+    .getByRole('button', { name: 'real-worker', exact: true })
+    .click()
   await expect(details.getByText('Running', { exact: true })).toBeVisible()
   await expect(details.getByText('false', { exact: true })).toBeVisible()
   await expect(inventory.getByText('web-example')).toHaveCount(0)
@@ -320,7 +324,11 @@ test('investigation loads UID-scoped events and previous logs only on request', 
   await expect(investigation.getByText('Previous run · available', { exact: true })).toBeVisible()
   expect(logReads).toBe(1)
   await details.getByText('Identity, placement & observation', { exact: true }).click()
-  await details.getByRole('button', { name: 'real-worker', exact: true }).click()
+  await details
+    .locator('details')
+    .filter({ has: page.getByText('Identity, placement & observation', { exact: true }) })
+    .getByRole('button', { name: 'real-worker', exact: true })
+    .click()
   await expect(details.getByLabel('Container log text')).toHaveCount(0)
   await details.getByRole('button', { name: /Investigate component/ }).click()
   await expect(investigation.getByRole('button', { name: 'Load current logs' })).toHaveCount(0)

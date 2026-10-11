@@ -17,12 +17,17 @@ ownership navigation, application scope and bounded histories with gaps.
 Local Go tests, `go vet`, backend build, frontend build, all 52 frontend model tests, nine lab and
 evidence tests, and 131 local documentation-link checks passed on 11 October 2026.
 
-A browser integration test is authored for clickable pod → ReplicaSet → Deployment ancestry and
-measurement availability. Its execution and the existing lifecycle, investigation, theme and
-monitoring browser checks remain pending in GitHub CI. A separate synthetic acceptance server was
-reachable by local commands but timed out in the in-app browser; that attempt does not count as
-browser validation. The running development preview reported denied access across all resource kinds
-before observer renewal, so retained observations cannot establish current live acceptance.
+GitHub CI for `baa5ebc` passed backend race tests, formatting, builds and all 52 frontend model
+tests. Twenty of 22 browser tests passed, including clickable pod → ReplicaSet → Deployment ancestry
+and measurement availability. Two existing navigation tests failed because the ownership card added
+a second button bearing the parent pod's name. Their locators now target the identity disclosure's
+parent link explicitly; the corrected suite awaits a new CI run. See the
+[failed run](https://github.com/Rano1000/KubeHabitat/actions/runs/38171683977).
+
+A separate synthetic acceptance server was reachable by local commands but timed out in the in-app
+browser; that attempt does not count as browser validation. The running development preview reported
+denied access across all resource kinds before observer renewal, so retained observations cannot
+establish current live acceptance.
 
 Manual checks in the existing in-app preview verified the updated ownership inspector's missing
 reference state and unknown-usage message. A duplicate sibling-key issue found during that check was
