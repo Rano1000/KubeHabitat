@@ -46,6 +46,12 @@ func project(obj any, now time.Time) []Resource {
 		return []Resource{r}
 	case *corev1.Pod:
 		r := base("Pod", value.ObjectMeta, now)
+		for _, owner := range value.OwnerReferences {
+			if owner.Controller != nil && *owner.Controller {
+				r.Owner = &Owner{UID: string(owner.UID), Kind: owner.Kind, Name: owner.Name}
+				break
+			}
+		}
 		r.Labels = value.Labels
 		r.Phase, r.NodeName = string(value.Status.Phase), value.Spec.NodeName
 		for _, c := range value.Status.Conditions {

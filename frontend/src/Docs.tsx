@@ -1,3 +1,5 @@
+import progressiveExploration from '../../docs/assets/progressive-exploration.svg'
+
 const phases = [
   [
     '00',
@@ -50,8 +52,8 @@ const phases = [
   [
     '08',
     'History & scale',
-    'Planned',
-    'Replay recorded activity, handle large clusters, and improve accessibility.',
+    'In review',
+    'Grouped workloads, replica pages, application scopes, saved views and observed browser activity. Production scale and durable replay remain open.',
   ],
   [
     '09',
@@ -73,6 +75,24 @@ export function Docs() {
         </p>
       </div>
       <div className="docs-grid">
+        <section className="doc-card wide">
+          <span className="eyebrow">PROGRESSIVE EXPLORATION / SCALE REVIEW</span>
+          <h2>A clear overview. Detail when you need it.</h2>
+          <img
+            src={progressiveExploration}
+            alt="Cluster overview, workload groups, replica pages and individual pod inspection. Warnings remain visible at every level."
+            style={{ width: '100%' }}
+          />
+          <p>
+            Large habitats automatically group workloads above 80 pods. Open a group to inspect 48
+            real pods per page, use application labels to narrow your view, and jump directly to
+            investigation targets. Unknown observations remain unknown.
+          </p>
+          <p>
+            Try Grouped workloads in the scene controls. Node maps, searchable labels, saved browser
+            views and observed session activity help you keep your place.
+          </p>
+        </section>
         <section className="doc-card wide">
           <span className="eyebrow">LIVE CONNECTION / PHASE 02</span>
           <h2>Connect a read-only context.</h2>

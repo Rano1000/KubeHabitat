@@ -47,8 +47,29 @@ export function buildHabitatLayout(
   const nodes = ordered(resources.filter((r) => r.kind === 'Node'))
   const podResources = ordered(resources.filter((r) => r.kind === 'Pod'))
   const containers = ordered(resources.filter((r) => r.kind === 'Container'))
+  const childrenByPod = new Map<string, LiveResource[]>()
+  const podsByNode = new Map<string, LiveResource[]>()
+  const byId = new Map(resources.map((r) => [r.id, r]))
+  const referenceIndex = new Map<string, LiveResource>()
+  for (const r of resources) {
+    if (r.parent) {
+      const children = childrenByPod.get(r.parent) ?? []
+      children.push(r)
+      childrenByPod.set(r.parent, children)
+    }
+    if (r.kind === 'Pod') {
+      const members = podsByNode.get(r.nodeName ?? '') ?? []
+      members.push(r)
+      podsByNode.set(r.nodeName ?? '', members)
+    }
+    referenceIndex.set(JSON.stringify([r.kind, 'uid', r.uid]), r)
+    referenceIndex.set(JSON.stringify([r.kind, 'uid', r.id]), r)
+    referenceIndex.set(JSON.stringify([r.kind, 'name', r.namespace ?? '', r.name]), r)
+  }
+  const podContainers = (id: string) =>
+    (childrenByPod.get(id) ?? []).filter((r) => r.kind === 'Container')
   const radius = (pod: LiveResource) =>
-    Math.max(0.76, 0.38 + Math.sqrt(containers.filter((c) => c.parent === pod.id).length) * 0.3)
+    Math.max(0.76, 0.38 + Math.sqrt(podContainers(pod.id).length) * 0.3)
   function dimensions(pods: LiveResource[]) {
     const columns = Math.max(1, Math.ceil(Math.sqrt(pods.length)))
     const rows = Math.max(1, Math.ceil(pods.length / columns))
@@ -75,7 +96,7 @@ export function buildHabitatLayout(
   )
   const infraShape = dimensions(infrastructure)
   const specifications = nodes.map((node) => {
-    const pods = podResources.filter((p) => p.nodeName === node.name)
+    const pods = ordered(podsByNode.get(node.name) ?? [])
     return { node, pods, ...dimensions(pods) }
   })
   const columns = Math.max(1, Math.ceil(Math.sqrt(nodes.length)))
@@ -99,7 +120,7 @@ export function buildHabitatLayout(
       radius(pod) + 0.69,
       origin[2] + (Math.floor(index / shape.columns) - (shape.rows - 1) / 2) * shape.cell + 0.2,
     ]
-    const children = containers.filter((c) => c.parent === pod.id)
+    const children = podContainers(pod.id)
     const childColumns = Math.max(1, Math.ceil(Math.sqrt(children.length)))
     const childRows = Math.max(1, Math.ceil(children.length / childColumns))
     const placedContainers = children.map((resource, childIndex) => {
@@ -196,23 +217,18 @@ export function buildHabitatLayout(
   const edges: { from: string; to: string; relation: string }[] = []
   for (const r of resources)
     for (const l of r.links ?? []) {
-      const target = resources.find(
-        (other) =>
-          other.kind === l.kind &&
-          (l.uid
-            ? other.uid === l.uid || other.id === l.uid
-            : other.name === l.name &&
-              (l.namespace ? other.namespace === l.namespace : !other.namespace)),
+      const target = referenceIndex.get(
+        l.uid
+          ? JSON.stringify([l.kind, 'uid', l.uid])
+          : JSON.stringify([l.kind, 'name', l.namespace ?? '', l.name]),
       )
       if (target) edges.push({ from: r.id, to: target.id, relation: l.relation })
     }
   for (const slice of resources.filter((r) => r.kind === 'EndpointSlice')) {
-    const service = edges.find(
-      (e) => e.from === slice.id && resources.find((r) => r.id === e.to)?.kind === 'Service',
-    )
+    const service = edges.find((e) => e.from === slice.id && byId.get(e.to)?.kind === 'Service')
     if (service)
       for (const endpoint of edges.filter(
-        (e) => e.from === slice.id && resources.find((r) => r.id === e.to)?.kind === 'Pod',
+        (e) => e.from === slice.id && byId.get(e.to)?.kind === 'Pod',
       ))
         edges.push({ from: service.to, to: endpoint.to, relation: endpoint.relation })
   }
@@ -258,6 +274,9 @@ export function sceneHighlights(
   const resource = layout.resources.find((r) => r.id === selected)
   const ids = new Set<string>([selected])
   if (!resource) return ids
+  if (resource.kind === 'Node')
+    for (const member of layout.resources)
+      if (member.kind === 'Pod' && member.nodeName === resource.name) ids.add(member.id)
   if (resource.kind === 'Namespace')
     for (const member of layout.resources)
       if (member.namespace === resource.name) ids.add(member.id)

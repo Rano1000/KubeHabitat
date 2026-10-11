@@ -21,6 +21,20 @@ func samplePod(uid string) *corev1.Pod {
 		Status: corev1.PodStatus{Phase: corev1.PodRunning, Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionFalse}}, ContainerStatuses: []corev1.ContainerStatus{{Name: "app", RestartCount: 3, State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}}}}}}
 }
 
+func TestControllingOwnerIsObservedWithoutInferringDeployment(t *testing.T) {
+	pod := samplePod("owned")
+	controller := true
+	pod.OwnerReferences = []metav1.OwnerReference{{UID: "unrelated", Kind: "Other", Name: "ignore"}, {UID: "rs-uid", Kind: "ReplicaSet", Name: "web-ab12", Controller: &controller}}
+	values := project(pod, time.Now().UTC())
+	if values[0].Owner == nil || values[0].Owner.UID != "rs-uid" || values[0].Owner.Kind != "ReplicaSet" || values[0].Owner.Name != "web-ab12" {
+		t.Fatalf("incorrect owner: %+v", values[0].Owner)
+	}
+	pod.OwnerReferences = nil
+	if project(pod, time.Now().UTC())[0].Owner != nil {
+		t.Fatal("standalone pod acquired an invented owner")
+	}
+}
+
 func TestProjectionPreservesLifecycleAndRedactsSpecs(t *testing.T) {
 	pod := samplePod("first")
 	s := NewStore("test")

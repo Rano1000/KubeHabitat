@@ -31,10 +31,18 @@ type Resource struct {
 	Deleting        bool              `json:"deleting,omitempty"`
 	Conditions      []Condition       `json:"conditions,omitempty"`
 	Labels          map[string]string `json:"labels,omitempty"`
+	Owner           *Owner            `json:"owner,omitempty"`
 	Details         map[string]string `json:"details,omitempty"`
 	Links           []Link            `json:"links,omitempty"`
 	Policy          *Policy           `json:"policy,omitempty"`
 	Usage           *Usage            `json:"usage,omitempty"`
+}
+
+// Owner is the observed controlling reference, not an inferred Deployment.
+type Owner struct {
+	UID  string `json:"uid"`
+	Kind string `json:"kind"`
+	Name string `json:"name"`
 }
 
 type Link struct {

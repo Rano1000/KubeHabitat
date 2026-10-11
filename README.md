@@ -87,6 +87,18 @@ certify reachable listeners or CNI enforcement. CPU/memory usage requires the Me
 Filesystem usage and traffic are visibly unavailable until those telemetry sources are integrated.
 See the [coverage and evidence guide](docs/live-topology.md).
 
+### Explore larger habitats
+
+![Progressive exploration: cluster overview, workload groups, replica pages and pod inspection](docs/assets/progressive-exploration.svg)
+
+Above 80 pods, the house automatically groups workloads by observed controller or explicit
+application labels within each real node. Open a group to inspect 48 pods per page, jump to
+investigation targets, scope explicit application labels, and keep your place with breadcrumbs, node
+maps and saved browser views. Small clusters retain individual pods. All observed identities remain
+in the inventory; hidden geometry does not hide warning or unknown counts. See the
+[large-cluster exploration guide](docs/large-clusters.md) for the synthetic 5,000-pod model
+benchmark and current production validation limits.
+
 ## Get started
 
 ### Prerequisites

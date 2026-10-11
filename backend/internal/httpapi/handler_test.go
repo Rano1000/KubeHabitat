@@ -36,6 +36,32 @@ func TestDisconnectedStatusAndReadOnlyBoundary(t *testing.T) {
 	}
 }
 
+func TestSnapshotConditionalGetDoesNotResendUnchangedInventory(t *testing.T) {
+	handler, err := NewHandlerWithCluster("", cluster.NewStore("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/api/v1/snapshot", nil))
+	etag := first.Header().Get("ETag")
+	if first.Code != http.StatusOK || etag == "" {
+		t.Fatal("snapshot must provide an ETag")
+	}
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/snapshot", nil)
+	request.Header.Set("If-None-Match", etag)
+	second := httptest.NewRecorder()
+	handler.ServeHTTP(second, request)
+	if second.Code != http.StatusNotModified || second.Body.Len() != 0 {
+		t.Fatal("unchanged inventory must produce a body-free heartbeat")
+	}
+	other, _ := NewHandlerWithCluster("", cluster.NewStore("different session"))
+	third := httptest.NewRecorder()
+	other.ServeHTTP(third, request)
+	if third.Code != http.StatusOK || third.Header().Get("ETag") == etag {
+		t.Fatal("new sessions must replace the cached inventory")
+	}
+}
+
 func TestLiveSnapshotNeverSubstitutesDemoData(t *testing.T) {
 	for _, live := range []bool{false, true} {
 		var store *cluster.Store

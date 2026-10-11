@@ -53,6 +53,7 @@ export type LiveResource = {
   deleting?: boolean
   conditions?: { type: string; status: string; reason?: string }[]
   labels?: Record<string, string>
+  owner?: { uid: string; kind: string; name: string }
   details?: Record<string, string>
   links?: { kind: LiveKind; name?: string; namespace?: string; uid?: string; relation: string }[]
   policy?: Policy
@@ -173,6 +174,15 @@ export function parseSnapshot(value: unknown): ClusterSnapshot {
     )
       throw new Error('Invalid resource observation')
     ids.add(r.id)
+    const owner = r.owner
+    if (
+      owner !== undefined &&
+      (!record(owner) ||
+        !['uid', 'kind', 'name'].every(
+          (key) => typeof owner[key] === 'string' && owner[key] !== '',
+        ))
+    )
+      throw new Error('Invalid controlling owner')
     for (const field of ['labels', 'details']) {
       if (
         r[field] !== undefined &&
@@ -275,12 +285,29 @@ export function useClusterSnapshot() {
     let previous: ClusterSnapshot | null = null
     let failed = false
     let retry = 2000
+    let etag: string | null = null
     async function refresh() {
       const request = new AbortController()
       controller = request
       const timeout = setTimeout(() => request.abort(), 4000)
       try {
-        const response = await fetch('/api/v1/snapshot', { signal: request.signal })
+        const response = await fetch('/api/v1/snapshot', {
+          signal: request.signal,
+          cache: 'no-store',
+          headers: etag ? { 'If-None-Match': etag } : undefined,
+        })
+        if (response.status === 304) {
+          if (!previous || !etag)
+            throw new Error('Unexpected snapshot heartbeat without an observation')
+          if (!disposed) {
+            setReceivedAt(Date.now())
+            setError(null)
+            setResynced(failed)
+          }
+          failed = false
+          retry = 2000
+          return
+        }
         if (response.status === 409)
           throw new Error(
             'Live discovery is disabled. Start the backend with -live and a read-only Kubernetes context.',
@@ -290,6 +317,7 @@ export function useClusterSnapshot() {
             'Live API unavailable. Last observations are retained, with their freshness marked unknown.',
           )
         const next = parseSnapshot(await response.json())
+        etag = response.headers.get('ETag')
         if (previous?.sessionId === next.sessionId && next.revision < previous.revision)
           throw new Error('Out-of-order snapshot rejected; waiting for a fresh cache.')
         if (!disposed) {

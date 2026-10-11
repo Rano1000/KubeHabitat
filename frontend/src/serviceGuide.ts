@@ -25,9 +25,12 @@ export function podServices(layout: HabitatLayout, podId: string) {
 // One visual guide per Service; only observed endpoint pod identities determine its rooms.
 export function servicePatrol(layout: HabitatLayout, serviceId: string) {
   const destinations = new Set(layout.edges.filter((e) => e.from === serviceId).map((e) => e.to))
-  const rooms = layout.rooms.filter((room) =>
-    room.pods.some((pod) => destinations.has(pod.resource.id)),
+  const nodeNames = new Set(
+    layout.resources
+      .filter((r) => r.kind === 'Pod' && destinations.has(r.id))
+      .map((r) => r.nodeName),
   )
+  const rooms = layout.rooms.filter((room) => nodeNames.has(room.resource.name))
   const services = layout.resources
     .filter((r) => r.kind === 'Service')
     .map((r) => r.id)

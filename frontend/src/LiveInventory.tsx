@@ -1,7 +1,26 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { liveKinds, useClusterSnapshot } from './useClusterSnapshot'
 import type { LiveKind, LiveResource } from './useClusterSnapshot'
-import { buildHabitatLayout, namespaceColor } from './habitatLayout'
+import { namespaceColor } from './habitatLayout'
+import {
+  application,
+  applicationScope,
+  containerIndex,
+  healthSummary,
+  scalableLayout,
+  workloadGroups,
+  warning,
+  observedChanges,
+  INVENTORY_PAGE,
+} from './scaleModel'
+import type { Activity } from './scaleModel'
+import {
+  WorkloadNavigator,
+  WorkloadInspector,
+  HabitatMap,
+  ActivityPanel,
+  SummaryText,
+} from './ScaleNavigation'
 import { podServices, serviceColor } from './serviceGuide'
 import { SceneBoundary } from './SceneBoundary'
 import { policyCheck } from './networkPolicy'
@@ -29,13 +48,6 @@ const kindLabels: Partial<Record<LiveKind, string>> = {
   Volume: 'Pod volumes',
 }
 
-function warning(r: LiveResource) {
-  return (
-    ['NotReady', 'Failed', 'Waiting', 'Pending', 'Unscheduled', 'Lost'].includes(r.state) ||
-    (r.state === 'Terminated' && r.exitCode !== undefined && r.exitCode !== 0) ||
-    (r.state === 'Running' && r.ready === false)
-  )
-}
 function stamp(value?: string) {
   return value ? new Date(value).toLocaleTimeString() : 'Not observed'
 }
@@ -46,6 +58,14 @@ export function LiveInventory() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
   const [namespace, setNamespace] = useState('All')
+  const [applicationKey, setApplicationKey] = useState('')
+  const [detailMode, setDetailMode] = useState<'auto' | 'grouped' | 'individual'>('auto')
+  const [onlyIssues, setOnlyIssues] = useState(false)
+  const [replicaPage, setReplicaPage] = useState(0)
+  const [inventoryPage, setInventoryPage] = useState(0)
+  const [activity, setActivity] = useState<Activity[]>([])
+  const previousSnapshot = useRef<typeof live.snapshot>(null)
+  const [savedViewMessage, setSavedViewMessage] = useState('')
   const [paused, setPaused] = useState(false)
   const [focusRevision, setFocusRevision] = useState(0)
   const housePanel = useRef<HTMLElement>(null)
@@ -75,7 +95,7 @@ export function LiveInventory() {
   }, [focusRevision, reducedMotion])
   const snapshot = live.snapshot
   const allResources = snapshot?.resources ?? emptyResources
-  const resources = useMemo(
+  const namespaceResources = useMemo(
     () =>
       allResources.filter(
         (r) =>
@@ -85,6 +105,23 @@ export function LiveInventory() {
       ),
     [allResources, namespace],
   )
+  const resources = useMemo(
+    () => applicationScope(namespaceResources, applicationKey),
+    [namespaceResources, applicationKey],
+  )
+  const groups = useMemo(() => workloadGroups(resources), [resources])
+  const compact = detailMode === 'grouped' || resources.filter((r) => r.kind === 'Pod').length > 80
+  const selectedGroup = groups.find((g) => g.id === selected)
+  const children = useMemo(() => containerIndex(resources), [resources])
+  useEffect(() => {
+    if (!snapshot) return
+    const before = live.resynced || live.stale ? null : previousSnapshot.current
+    const changes = observedChanges(before, snapshot)
+    if (before?.sessionId !== snapshot.sessionId) setActivity([])
+    if (changes.length) setActivity((items) => [...changes.reverse(), ...items].slice(0, 20))
+    previousSnapshot.current = snapshot
+  }, [snapshot, live.resynced, live.stale])
+  useEffect(() => setInventoryPage(0), [query, kind, namespace, applicationKey, onlyIssues])
   const namespaces = [
     ...new Set(
       allResources.flatMap((r) =>
@@ -96,9 +133,25 @@ export function LiveInventory() {
     () => sceneObjectIds(resources, layers, storagePod),
     [resources, layers, storagePod],
   )
-  const layout = useMemo(() => buildHabitatLayout(resources, { objectIds }), [resources, objectIds])
+  const layout = useMemo(
+    () =>
+      scalableLayout(
+        resources,
+        objectIds,
+        compact,
+        selectedGroup?.id ?? null,
+        replicaPage,
+        selected,
+      ),
+    [resources, objectIds, compact, selectedGroup?.id, replicaPage, selected],
+  )
   const current = resources.find((r) => r.id === selected)
   const attachedStorage = storagePod ? podStorage(resources, storagePod) : null
+  const visibility = (r: LiveResource) =>
+    snapshot?.visibility.find(
+      (v) => v.kind === (r.kind === 'Container' || r.kind === 'Volume' ? 'Pod' : r.kind),
+    )
+  const fresh = (r: LiveResource) => !live.stale && visibility(r)?.state === 'observing'
   const visible = resources.filter(
     (r) =>
       (kind === 'All' || r.kind === kind) &&
@@ -108,15 +161,48 @@ export function LiveInventory() {
         objectIds.has(r.id) ||
         r.id === selected) &&
       (!attachedStorage || !storageKinds.includes(r.kind) || attachedStorage.has(r.id)) &&
-      `${r.name} ${r.namespace ?? ''} ${r.nodeName ?? ''} ${r.kind}`
+      (!onlyIssues ||
+        !fresh(r) ||
+        r.state === 'Unknown' ||
+        warning(r) ||
+        (r.kind === 'Pod' && children.get(r.id)?.some(warning))) &&
+      `${r.name} ${r.namespace ?? ''} ${r.nodeName ?? ''} ${r.kind} ${Object.entries(r.labels ?? {})
+        .map(([key, value]) => `${key}=${value}`)
+        .join(' ')}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   )
-  const visibility = (r: LiveResource) =>
-    snapshot?.visibility.find(
-      (v) => v.kind === (r.kind === 'Container' || r.kind === 'Volume' ? 'Pod' : r.kind),
-    )
-  const fresh = (r: LiveResource) => !live.stale && visibility(r)?.state === 'observing'
+  const summaries = new Map(
+    groups.map((g) => [g.id, healthSummary(g.pods, resources, fresh, children)]),
+  )
+  const nodeSummaries = new Map(
+    layout.rooms.map((room) => [
+      room.resource.name,
+      healthSummary(
+        resources.filter((r) => r.kind === 'Pod' && r.nodeName === room.resource.name),
+        resources,
+        fresh,
+        children,
+      ),
+    ]),
+  )
+  const groupCandidates = groups.filter(
+    (g) =>
+      (!onlyIssues || summaries.get(g.id)!.warning > 0 || summaries.get(g.id)!.unknown > 0) &&
+      `${g.name} ${g.namespace} ${g.nodeName}`.toLowerCase().includes(query.toLowerCase()),
+  )
+  const listPage = Math.min(
+    inventoryPage,
+    Math.max(0, Math.ceil(visible.length / INVENTORY_PAGE) - 1),
+  )
+  const openGroup = (id: string, page = 0) => {
+    setSelected(id)
+    setReplicaPage(page)
+    setKind('All')
+    setQuery('')
+    setOnlyIssues(false)
+    setFocusRevision((n) => n + 1)
+  }
   const pods = resources.filter((r) => r.kind === 'Pod')
   const source = pods.find((r) => r.id === sourceId)
   const destination = pods.find((r) => r.id === destinationId)
@@ -132,7 +218,12 @@ export function LiveInventory() {
   const signal = (r: LiveResource) =>
     !fresh(r) || r.state === 'Unknown' ? 'unknown' : warning(r) ? 'warning' : 'ready'
   const select = (id: string) => {
+    if (groups.some((g) => g.id === id)) {
+      openGroup(id)
+      return
+    }
     const resource = allResources.find((r) => r.id === id)
+    if (resource && !resources.some((r) => r.id === id)) setApplicationKey('')
     if (resource?.kind === 'Namespace') {
       setNamespace(resource.name)
       setStoragePod(null)
@@ -152,12 +243,15 @@ export function LiveInventory() {
     setSelected(id)
     setKind('All')
     setQuery('')
+    setOnlyIssues(false)
     setFocusRevision((n) => n + 1)
   }
   const reset = () => {
     setKind('All')
     setSelected(null)
     setQuery('')
+    setReplicaPage(0)
+    setOnlyIssues(false)
     setStoragePod(null)
     setLayers({ network: false, storage: false, capacity: false })
     setSourceId('')
@@ -180,6 +274,45 @@ export function LiveInventory() {
     setKind('Volume')
     setQuery('')
     setFocusRevision((n) => n + 1)
+  }
+  const saveView = () => {
+    try {
+      localStorage.setItem(
+        `kubehabitat:view:${snapshot?.cluster}`,
+        JSON.stringify({ namespace, applicationKey, detailMode, onlyIssues }),
+      )
+      setSavedViewMessage('View saved on this browser.')
+    } catch {
+      setSavedViewMessage('Browser storage is unavailable.')
+    }
+  }
+  const restoreView = () => {
+    try {
+      const value = JSON.parse(
+        localStorage.getItem(`kubehabitat:view:${snapshot?.cluster}`) ?? 'null',
+      )
+      if (
+        !value ||
+        !['auto', 'grouped', 'individual'].includes(value.detailMode) ||
+        typeof value.onlyIssues !== 'boolean' ||
+        typeof value.applicationKey !== 'string'
+      ) {
+        setSavedViewMessage('No valid saved view for this cluster.')
+        return
+      }
+      setNamespace(namespaces.includes(value.namespace) ? value.namespace : 'All')
+      setApplicationKey(
+        allResources.some((r) => application(r) === value.applicationKey)
+          ? value.applicationKey
+          : '',
+      )
+      setDetailMode(value.detailMode)
+      reset()
+      setOnlyIssues(value.onlyIssues)
+      setSavedViewMessage('Saved view restored.')
+    } catch {
+      setSavedViewMessage('Saved view is unavailable.')
+    }
   }
   return (
     <main id="main-content" className="explorer live-explorer">
@@ -341,9 +474,48 @@ export function LiveInventory() {
           <input
             id="live-search"
             type="search"
-            placeholder="Pod, service or component name…"
+            placeholder="Name, node or label (app=shop)…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+          />
+          <label className="search-label" htmlFor="application-scope">
+            Application view
+          </label>
+          <select
+            id="application-scope"
+            value={applicationKey}
+            onChange={(e) => {
+              setApplicationKey(e.target.value)
+              reset()
+            }}
+          >
+            <option value="">All applications</option>
+            {[...new Set(namespaceResources.map(application).filter(Boolean))].sort().map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </select>
+          <p className="scope-note">
+            Applications follow explicit labels. Referenced Services and storage are included as
+            dependencies.
+          </p>
+          <button
+            className="subtle-button issue-filter"
+            aria-pressed={onlyIssues}
+            onClick={() => {
+              setOnlyIssues((value) => !value)
+              setSelected(null)
+              setFocusRevision((n) => n + 1)
+            }}
+          >
+            Needs investigation / unknown
+          </button>
+          <WorkloadNavigator
+            groups={groupCandidates}
+            summaries={summaries}
+            onOpen={openGroup}
+            expanded={compact || !!selectedGroup}
           />
           <div className="kind-filters" aria-label="Live resource kinds">
             {(['All', ...overviewKinds] as const).map((k) => (
@@ -398,7 +570,7 @@ export function LiveInventory() {
             </div>
           )}
           <div className="resource-list">
-            {visible.map((r) => (
+            {visible.slice(listPage * INVENTORY_PAGE, (listPage + 1) * INVENTORY_PAGE).map((r) => (
               <button
                 key={r.id}
                 className={`resource-item ${selected === r.id ? 'selected' : ''}`}
@@ -437,6 +609,28 @@ export function LiveInventory() {
               </p>
             )}
           </div>
+          {visible.length > INVENTORY_PAGE && (
+            <div className="pagination">
+              <button
+                className="subtle-button"
+                disabled={listPage === 0}
+                onClick={() => setInventoryPage(listPage - 1)}
+              >
+                Previous components
+              </button>
+              <span>
+                {listPage * INVENTORY_PAGE + 1}–
+                {Math.min((listPage + 1) * INVENTORY_PAGE, visible.length)} / {visible.length}
+              </span>
+              <button
+                className="subtle-button"
+                disabled={(listPage + 1) * INVENTORY_PAGE >= visible.length}
+                onClick={() => setInventoryPage(listPage + 1)}
+              >
+                Next components
+              </button>
+            </div>
+          )}
           <div className="inventory-footer">
             Select a namespace to enter it. More components appear when requested.
           </div>
@@ -446,7 +640,9 @@ export function LiveInventory() {
           className="scene-panel live-house-panel"
           aria-label="Live cluster house"
           data-node-count={layout.rooms.length}
-          data-pod-count={layout.pods.length}
+          data-pod-count={layout.totalPods}
+          data-rendered-pod-count={layout.pods.length}
+          data-workload-group-count={layout.groups.length}
           data-container-count={resources.filter((r) => r.kind === 'Container').length}
           data-layout-width={layout.width}
           data-layout-depth={layout.depth}
@@ -468,6 +664,54 @@ export function LiveInventory() {
               Reset view
             </button>
           </div>
+          <div className="scale-toolbar" aria-label="Scale navigation">
+            <label>
+              Scene detail{' '}
+              <select
+                aria-label="Scene detail"
+                value={detailMode}
+                onChange={(e) => {
+                  setDetailMode(e.target.value as typeof detailMode)
+                  reset()
+                }}
+              >
+                <option value="auto">Automatic</option>
+                <option value="grouped">Grouped workloads</option>
+                <option value="individual" disabled={layout.totalPods > 80}>
+                  Individual pods (up to 80)
+                </option>
+              </select>
+            </label>
+            <button className="subtle-button" onClick={saveView}>
+              Save view
+            </button>
+            <button className="subtle-button" onClick={restoreView}>
+              Restore view
+            </button>
+            {savedViewMessage && <span role="status">{savedViewMessage}</span>}
+          </div>
+          <nav className="habitat-breadcrumb" aria-label="Habitat location">
+            <button
+              className="text-link"
+              onClick={() => {
+                setNamespace('All')
+                setApplicationKey('')
+                reset()
+              }}
+            >
+              Cluster
+            </button>
+            {namespace !== 'All' && <span> / {namespace}</span>}
+            {applicationKey && <span> / {applicationKey}</span>}
+            {(current || selectedGroup) && <span> / {current?.name ?? selectedGroup?.name}</span>}
+          </nav>
+          {compact && (
+            <p className="scale-note" role="status">
+              {layout.totalPods} observed pods · {layout.groups.length} collapsed groups ·{' '}
+              {layout.pods.length} individual pods shown. Click a group to explore 48 members per
+              page; zoom close to preview its pods.
+            </p>
+          )}
           <div className="layer-controls" aria-label="Visual layers">
             {(['network', 'storage', 'capacity'] as const).map((layer) => (
               <button
@@ -500,6 +744,9 @@ export function LiveInventory() {
                 >
                   <LiveHabitatScene
                     layout={layout}
+                    summaries={summaries}
+                    nodeSummaries={nodeSummaries}
+                    groupMembers={selectedGroup?.pods.map((p) => p.id)}
                     selected={selected}
                     matching={visible.map((r) => r.id)}
                     focusRevision={focusRevision}
@@ -507,7 +754,7 @@ export function LiveInventory() {
                     fresh={fresh}
                     onSelect={select}
                     layers={layers}
-                    overview={!selected && kind === 'All' && query === ''}
+                    overview={!selected && kind === 'All' && query === '' && !onlyIssues}
                     endpointsFresh={
                       !live.stale &&
                       snapshot.visibility.some(
@@ -546,7 +793,7 @@ export function LiveInventory() {
             )}
           </div>
           <div className="live-scene-counts" role="status">
-            {layout.rooms.length} node rooms · {layout.pods.length} pods ·{' '}
+            {layout.rooms.length} node rooms · {layout.totalPods} pods ·{' '}
             {resources.filter((r) => r.kind === 'Container').length} containers
             {snapshot && (live.stale || snapshot.connection !== 'connected')
               ? ' · some observations retained; check freshness'
@@ -554,6 +801,12 @@ export function LiveInventory() {
             {' · '}
             {resources.filter((r) => r.kind === 'Service').length} services
           </div>
+          <HabitatMap layout={layout} summaries={nodeSummaries} onSelect={select} />
+          <ActivityPanel
+            activity={activity}
+            onSelect={select}
+            ids={new Set(allResources.map((r) => r.id))}
+          />
           <div className="scene-footer">
             <div className="scene-legend">
               <span>
@@ -583,7 +836,7 @@ export function LiveInventory() {
             </p>
           )}
           <div className="namespace-legend">
-            {[...new Set(layout.pods.map((p) => p.resource.namespace ?? ''))]
+            {[...new Set(resources.filter((r) => r.kind === 'Pod').map((p) => p.namespace ?? ''))]
               .filter(Boolean)
               .map((name) => (
                 <button
@@ -700,10 +953,21 @@ export function LiveInventory() {
             <h2>Inspector</h2>
             <span>KUBERNETES</span>
           </div>
-          {current ? (
+          {selectedGroup ? (
+            <WorkloadInspector
+              group={selectedGroup}
+              summary={summaries.get(selectedGroup.id)!}
+              page={replicaPage}
+              onPage={(page) => openGroup(selectedGroup.id, page)}
+              onSelect={select}
+              fresh={fresh}
+              children={children}
+            />
+          ) : current ? (
             <>
               <span className="eyebrow detail-kind">{current.kind}</span>
               <h3>{current.name}</h3>
+              {current.kind === 'Node' && <SummaryText value={nodeSummaries.get(current.name)!} />}
               <span className={`state-badge ${signal(current)}`}>
                 {fresh(current) ? current.state : 'Unknown freshness'}
               </span>

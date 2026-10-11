@@ -16,7 +16,7 @@ throughput supports estimates.
 | 05    | Investigation and inspectable evidence            | Planned   |
 | 06    | Metrics, ownership, services, storage             | Planned   |
 | 07    | Optional observed traffic                         | Planned   |
-| 08    | History, scale, accessibility                     | Planned   |
+| 08    | History, scale, accessibility                     | In review |
 | 09    | Packaging, deployment, public release             | Planned   |
 
 ## 01 · Foundation
@@ -54,6 +54,10 @@ failure, disconnect, reconnect, and resync are visible. No Secret payload is fet
 
 See the [Phase 03 delivery record](phase-03-delivery.md). Initial network, storage and Metrics API
 layers are also available for review at the user's request; later-phase acceptance remains open.
+
+Progressive scale navigation was brought forward at the user's request. See the
+[large-cluster exploration guide](large-clusters.md) for grouped workloads, replica pages,
+application scope, investigation shortcuts, activity and validation limits.
 
 Generate rooms and placements from observations. Show namespaces across rooms and unscheduled pods
 in a waiting area. Synchronize inventory, highlighting, guided camera, and inspector.

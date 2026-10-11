@@ -1,16 +1,20 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
-import { CanvasTexture, Group, Quaternion, Vector3 } from 'three'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CanvasTexture, Group, Quaternion, Vector3, InstancedMesh, Object3D, Color } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { namespaceColor, sceneHighlights } from './habitatLayout'
-import type { HabitatLayout, PlacedPod, Point } from './habitatLayout'
+import type { PlacedPod, Point } from './habitatLayout'
 import type { LiveResource } from './useClusterSnapshot'
 import { storageFacts } from './habitatView'
 import { patrolPose, podServices, serviceColor, servicePatrol } from './serviceGuide'
+import type { ScaleLayout, Summary, GroupPlacement } from './scaleModel'
 
 type Props = {
-  layout: HabitatLayout
+  layout: ScaleLayout
+  summaries: Map<string, Summary>
+  nodeSummaries: Map<string, Summary>
+  groupMembers?: string[]
   selected: string | null
   matching: string[]
   motion: boolean
@@ -354,6 +358,7 @@ function CameraRig({
   focusRevision,
   motion,
   overview: overviewRequested,
+  groupMembers,
 }: Props) {
   const { camera, gl, invalidate, size } = useThree()
   const controls = useRef<OrbitControls | null>(null)
@@ -369,9 +374,11 @@ function CameraRig({
   // Keep pod inspection close enough to distinguish its containers; external references stay lit.
   const focusIds = selectedPod
     ? [selectedPod.resource.id, ...selectedPod.containers.map((child) => child.resource.id)]
-    : selected
-      ? [...sceneHighlights(layout, selected, [])]
-      : matching
+    : groupMembers?.length
+      ? groupMembers
+      : selected
+        ? [...sceneHighlights(layout, selected, [])]
+        : matching
   const points = [
     ...focusIds.map((id) => layout.positions.get(id)).filter((p): p is Point => !!p),
     ...layout.resources
@@ -401,7 +408,6 @@ function CameraRig({
             Math.max(...points.map((p) => p[2])) - Math.min(...points.map((p) => p[2])) + 2.5,
           )
   // Polling revisions must not continually reset an engineer's manual orbit.
-  const framing = `${center.join(':')}:${span}:${size.width}:${size.height}`
   useEffect(() => {
     const orbit = new OrbitControls(camera, gl.domElement)
     orbit.maxPolarAngle = Math.PI / 2.03
@@ -438,7 +444,7 @@ function CameraRig({
     invalidate()
     // Coordinates and framing are encoded in the primitive key, not snapshot object references.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [framing, selected, focusRevision, motion, camera, invalidate])
+  }, [selected, focusRevision, motion, camera, invalidate, size.width, size.height])
   useFrame((_, delta) => {
     if (!controls.current) return
     if (moving.current) {
@@ -571,9 +577,152 @@ function Pod({
   )
 }
 
+function GroupedWorkloads({ props }: { props: Props }) {
+  const mesh = useRef<InstancedMesh>(null)
+  const [near, setNear] = useState<string | null>(null)
+  const elapsed = useRef(0)
+  const phase = useRef(0)
+  const transform = useRef(new Object3D())
+  const groups = props.layout.groups
+  const active = new Set(
+    props.groupMembers ?? sceneHighlights(props.layout, props.selected, props.matching),
+  )
+  const { invalidate } = useThree()
+  useEffect(() => {
+    if (!mesh.current) return
+    const object = new Object3D()
+    groups.forEach((entry, index) => {
+      object.position.set(...entry.position)
+      object.scale.set(0.8, 0.8, 0.8)
+      object.updateMatrix()
+      mesh.current!.setMatrixAt(index, object.matrix)
+      const summary = props.summaries.get(entry.group.id)!
+      const tint = new Color(summary.warning ? '#e4be77' : summary.unknown ? '#8594a6' : '#73dfcf')
+      if (!entry.group.pods.some((pod) => active.has(pod.id))) tint.multiplyScalar(0.25)
+      mesh.current!.setColorAt(index, tint)
+    })
+    mesh.current.instanceMatrix.needsUpdate = true
+    if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
+    mesh.current.computeBoundingSphere()
+    invalidate()
+  }, [groups, props.summaries, invalidate])
+  useFrame(({ camera }, delta) => {
+    if (mesh.current && props.motion) {
+      phase.current += Math.min(delta, 0.1)
+      groups.forEach((entry, index) => {
+        const summary = props.summaries.get(entry.group.id)!
+        const alive = summary.ready === summary.total
+        transform.current.position.set(...entry.position)
+        if (alive) transform.current.position.y += Math.sin(phase.current + index) * 0.06
+        transform.current.rotation.y = alive ? phase.current * 0.12 : 0
+        transform.current.scale.set(0.8, 0.8, 0.8)
+        transform.current.updateMatrix()
+        mesh.current!.setMatrixAt(index, transform.current.matrix)
+      })
+      mesh.current.instanceMatrix.needsUpdate = true
+    }
+    elapsed.current += delta
+    if (elapsed.current < 0.25) return
+    elapsed.current = 0
+    let closest: string | null = null,
+      distance = 9
+    for (const entry of groups) {
+      const d = camera.position.distanceTo(new Vector3(...entry.position))
+      if (d < distance) {
+        distance = d
+        closest = entry.group.id
+      }
+    }
+    setNear((previous) => (previous === closest ? previous : closest))
+  })
+  if (!groups.length) return null
+  const close = groups.find((entry) => entry.group.id === near)
+  const labels =
+    groups.length <= 32 ? groups : groups.filter((entry) => entry.group.id === near).slice(0, 1)
+  return (
+    <>
+      <instancedMesh
+        key={groups.length}
+        ref={mesh}
+        args={[undefined, undefined, groups.length]}
+        onClick={(event) => {
+          event.stopPropagation()
+          const entry = groups[event.instanceId ?? -1]
+          if (entry) props.onSelect(entry.group.id)
+        }}
+      >
+        <icosahedronGeometry args={[1, 0]} />
+        <meshStandardMaterial wireframe roughness={0.6} />
+      </instancedMesh>
+      {labels.map((entry) => {
+        const value = props.summaries.get(entry.group.id)!
+        return (
+          <Label
+            key={entry.group.id}
+            text={`${entry.group.name} · ${entry.hidden} hidden / ${value.total} pods · ${value.warning} investigate · ${value.unknown} unknown`}
+            position={[entry.position[0], entry.position[1] + 1.3, entry.position[2]]}
+            width={3.4}
+            onClick={(event) => {
+              event.stopPropagation()
+              props.onSelect(entry.group.id)
+            }}
+          />
+        )
+      })}
+      {close && <GroupPreview key={close.group.id} entry={close} props={props} />}
+    </>
+  )
+}
+
+function GroupPreview({ entry, props }: { entry: GroupPlacement; props: Props }) {
+  const pods = entry.group.pods.slice(0, 24)
+  const mesh = useRef<InstancedMesh>(null)
+  useEffect(() => {
+    if (!mesh.current) return
+    const object = new Object3D()
+    pods.forEach((pod, index) => {
+      object.position.set(((index % 6) - 2.5) * 0.3, Math.floor(index / 6) * 0.3, 0)
+      object.updateMatrix()
+      mesh.current!.setMatrixAt(index, object.matrix)
+      mesh.current!.setColorAt(index, new Color(color(pod, props.fresh(pod))))
+    })
+    mesh.current.instanceMatrix.needsUpdate = true
+    if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
+    mesh.current.computeBoundingSphere()
+  }, [entry.group, props.fresh])
+  return (
+    <group position={[entry.position[0], entry.position[1], entry.position[2] + 1]}>
+      <instancedMesh
+        ref={mesh}
+        args={[undefined, undefined, pods.length]}
+        onClick={(event) => {
+          event.stopPropagation()
+          const pod = pods[event.instanceId ?? -1]
+          if (pod) props.onSelect(pod.id)
+        }}
+      >
+        <icosahedronGeometry args={[0.12, 0]} />
+        <meshStandardMaterial />
+      </instancedMesh>
+      <Label
+        text={`Preview ${pods.length}/${entry.group.pods.length} · click group for all members`}
+        position={[0, -0.4, 0]}
+        width={3.3}
+      />
+    </group>
+  )
+}
+
 function House(props: Props) {
   const { layout } = props
   const ids = sceneHighlights(layout, props.selected, props.matching)
+  const byId = new Map(layout.resources.map((r) => [r.id, r]))
+  const serviceCount = layout.objects.filter((o) => o.resource.kind === 'Service').length
+  const routeKeys = new Set<string>()
+  for (const id of props.groupMembers ?? []) ids.add(id)
+  if (props.groupMembers?.length)
+    for (const pod of layout.pods)
+      if (ids.has(pod.resource.id)) for (const child of pod.containers) ids.add(child.resource.id)
   const width = layout.width + 0.7
   const depth = layout.depth + 0.7
   const height = Math.max(3.1, ...layout.pods.map((p) => p.position[1] + p.radius + 0.8))
@@ -641,7 +790,7 @@ function House(props: Props) {
             opacity={0.22}
           />
           <Label
-            text={`${room.resource.name} · ${room.pods.length} pods`}
+            text={`${room.resource.name} · ${props.nodeSummaries.get(room.resource.name)?.total ?? 0} pods · ${props.nodeSummaries.get(room.resource.name)?.warning ?? 0} investigate · ${props.nodeSummaries.get(room.resource.name)?.unknown ?? 0} unknown`}
             position={[0, height - 0.35, -room.depth / 2 + 0.35]}
             width={Math.min(room.width - 0.3, 5)}
             onClick={(e) => {
@@ -685,18 +834,42 @@ function House(props: Props) {
       {layout.pods.map((pod) => (
         <Pod key={pod.resource.id} pod={pod} props={props} highlighted={ids} />
       ))}
-      {layout.objects.map((object) => (
-        <Infrastructure
-          key={object.resource.id}
-          {...object}
-          props={props}
-          highlighted={ids.has(object.resource.id)}
-        />
-      ))}
+      <GroupedWorkloads props={props} />
+      {layout.objects.map((object) =>
+        object.resource.kind === 'Service' &&
+        serviceCount > 32 &&
+        props.selected !== object.resource.id ? (
+          <mesh
+            key={object.resource.id}
+            position={object.position}
+            onClick={(event) => {
+              event.stopPropagation()
+              props.onSelect(object.resource.id)
+            }}
+          >
+            <capsuleGeometry args={[0.12, 0.25, 4, 6]} />
+            <meshStandardMaterial
+              color={serviceColor(object.resource)}
+              transparent
+              opacity={props.fresh(object.resource) ? 1 : 0.4}
+            />
+          </mesh>
+        ) : (
+          <Infrastructure
+            key={object.resource.id}
+            {...object}
+            props={props}
+            highlighted={ids.has(object.resource.id)}
+          />
+        ),
+      )}
       {layout.edges
         .filter((edge) => {
-          const source = layout.resources.find((r) => r.id === edge.from)
-          const target = layout.resources.find((r) => r.id === edge.to)
+          const source = byId.get(edge.from)
+          const target = byId.get(edge.to)
+          const routeKey = `${layout.positions.get(edge.from)?.join(':')}/${layout.positions.get(edge.to)?.join(':')}/${edge.from}`
+          if (routeKeys.has(routeKey)) return false
+          routeKeys.add(routeKey)
           return (
             source &&
             target &&
@@ -715,7 +888,10 @@ function House(props: Props) {
               : networkKinds.has(source.kind)
                 ? props.layers.network
                 : props.layers.storage) &&
-            (!props.selected || ids.has(edge.from) || ids.has(edge.to))
+            !!props.selected &&
+            (edge.from === props.selected ||
+              edge.to === props.selected ||
+              (props.selected.startsWith('workload:') && (ids.has(edge.from) || ids.has(edge.to))))
           )
         })
         .map((edge, index) => {
@@ -774,10 +950,6 @@ function House(props: Props) {
 export function LiveHabitatScene(props: Props) {
   const { layout } = props
   const scale = Math.max(layout.width, layout.depth, 12)
-  const containers = layout.pods.reduce(
-    (n, p) => n + p.containers.length,
-    layout.looseContainers.length,
-  )
   return (
     <Canvas
       dpr={[1, 1.5]}
@@ -787,7 +959,7 @@ export function LiveHabitatScene(props: Props) {
         fov: 43,
         far: Math.max(200, scale * 10),
       }}
-      aria-label={`Live Kubernetes house with ${layout.rooms.length} node rooms, ${layout.pods.length} pods and ${containers} containers`}
+      aria-label={`Live Kubernetes house with ${layout.rooms.length} node rooms, ${layout.totalPods} observed pods and ${layout.totalContainers} containers; ${layout.groups.length} collapsed workload groups and ${layout.pods.length} individual pods shown`}
     >
       <color attach="background" args={['#0d1726']} />
       <ambientLight intensity={1.5} />

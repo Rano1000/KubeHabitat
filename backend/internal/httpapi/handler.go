@@ -2,12 +2,14 @@
 package httpapi
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Rano1000/KubeHabitat/backend/internal/cluster"
 )
@@ -48,7 +50,24 @@ func NewHandlerWithCluster(staticDir string, store *cluster.Store) (http.Handler
 			writeJSON(w, http.StatusConflict, map[string]string{"error": "Live discovery is disabled. Start the backend with -live; demo fixtures are never returned by this endpoint."})
 			return
 		}
-		writeJSON(w, http.StatusOK, store.Snapshot())
+		snapshot := store.Snapshot()
+		// Exclude response time, but include visibility and usage expiry as well as revision.
+		// A heartbeat must never hide a newly stale API or an expired usage sample.
+		versioned := snapshot
+		versioned.GeneratedAt = time.Time{}
+		encoded, err := json.Marshal(versioned)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Snapshot encoding unavailable"})
+			return
+		}
+		etag := fmt.Sprintf(`"%x"`, sha256.Sum256(encoded))
+		w.Header().Set("ETag", etag)
+		w.Header().Set("Cache-Control", "no-cache")
+		if r.Header.Get("If-None-Match") == etag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		writeJSON(w, http.StatusOK, snapshot)
 	})
 	var files http.Handler
 	if staticDir != "" {
