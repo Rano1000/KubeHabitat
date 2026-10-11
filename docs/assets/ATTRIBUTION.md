@@ -46,3 +46,7 @@ illustrates colour rules, not measured data or a live screenshot.
 `investigation-flow.svg` is original source-authored KubeHabitat artwork illustrating selection,
 UID-scoped events and bounded log retrieval. Its gentle alert animation respects reduced motion. It
 is explanatory artwork, not a live screenshot or automatic diagnosis.
+
+`pod-actions.svg` is original source-authored KubeHabitat artwork explaining the implemented pod
+actions workflow. Its gentle container highlight supports reduced motion. It illustrates a workflow,
+not live telemetry or a proven root cause.

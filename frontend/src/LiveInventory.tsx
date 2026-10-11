@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { liveKinds, useClusterSnapshot } from './useClusterSnapshot'
 import type { LiveKind, LiveResource } from './useClusterSnapshot'
 import { namespaceColor } from './habitatLayout'
@@ -27,6 +27,10 @@ import { useMonitoringView } from './useMonitoringView'
 import { ThemeSelector, ResourceGlyph } from './themes'
 import { LifecycleEvidence } from './LifecycleEvidence'
 import { InvestigationPanel } from './InvestigationPanel'
+import { PodActionsMenu } from './PodActionsMenu'
+import { PodWorkbench } from './PodWorkbench'
+import { podNeedsInspection } from './podTroubleshooting'
+import type { PodAction } from './podTroubleshooting'
 import { lifecycle, needsInvestigation } from './lifecycle'
 import { policyCheck } from './networkPolicy'
 import {
@@ -64,6 +68,26 @@ export function LiveInventory() {
   const [kind, setKind] = useState<LiveKind | 'All'>('All')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
+  const [podMenu, setPodMenu] = useState<{
+    id: string
+    x: number
+    y: number
+    session: string
+  } | null>(null)
+  const [podAction, setPodAction] = useState<{
+    id: string
+    action: PodAction
+    nonce: number
+    session: string
+  } | null>(null)
+  const [evidenceIntent, setEvidenceIntent] = useState<{
+    id: string
+    action: 'events' | 'logs'
+    nonce: number
+    session: string
+  } | null>(null)
+  const [issuePage, setIssuePage] = useState(0)
+  const closePodMenu = useCallback(() => setPodMenu(null), [])
   const [namespace, setNamespace] = useState('All')
   const [applicationKey, setApplicationKey] = useState('')
   const [detailMode, setDetailMode] = useState<'auto' | 'grouped' | 'individual'>('auto')
@@ -128,7 +152,10 @@ export function LiveInventory() {
     if (changes.length) setActivity((items) => [...changes.reverse(), ...items].slice(0, 20))
     previousSnapshot.current = snapshot
   }, [snapshot, live.resynced, live.stale])
-  useEffect(() => setInventoryPage(0), [query, kind, namespace, applicationKey, onlyIssues])
+  useEffect(() => {
+    setInventoryPage(0)
+    setIssuePage(0)
+  }, [query, kind, namespace, applicationKey, onlyIssues])
   const namespaces = [
     ...new Set(
       allResources.flatMap((r) =>
@@ -232,7 +259,21 @@ export function LiveInventory() {
     }
     return !fresh(r) || r.state === 'Unknown' ? 'unknown' : warning(r) ? 'warning' : 'ready'
   }
+  const menuPod =
+    podMenu?.session === snapshot?.sessionId
+      ? allResources.find((r) => r.id === podMenu?.id && r.kind === 'Pod')
+      : undefined
+  const inspectionPods = pods.filter((pod) =>
+    podNeedsInspection(pod, children.get(pod.id) ?? [], fresh),
+  )
+  const issueListPage = Math.min(issuePage, Math.max(0, Math.ceil(inspectionPods.length / 10) - 1))
+  const openPodMenu = (id: string, x: number, y: number) => {
+    if (snapshot && allResources.some((r) => r.id === id && r.kind === 'Pod'))
+      setPodMenu({ id, x, y, session: snapshot.sessionId })
+  }
   const select = (id: string) => {
+    setEvidenceIntent(null)
+    setPodAction(null)
     if (monitoring.expanded) monitoring.setPanel('details')
     if (groups.some((g) => g.id === id)) {
       openGroup(id)
@@ -261,6 +302,25 @@ export function LiveInventory() {
     setQuery('')
     setOnlyIssues(false)
     setFocusRevision((n) => n + 1)
+  }
+  const runPodAction = (id: string, action: PodAction) => {
+    if (!snapshot) return
+    closePodMenu()
+    select(id)
+    const nonce = Date.now()
+    setPodAction({ id, action, nonce, session: snapshot.sessionId })
+    setEvidenceIntent(
+      action === 'events' ? { id, action: 'events', nonce, session: snapshot.sessionId } : null,
+    )
+    if (action === 'memory') setLayers((value) => ({ ...value, capacity: true }))
+    if (action === 'storage') {
+      setStoragePod(id)
+      setLayers((value) => ({ ...value, storage: true }))
+    }
+    if (action === 'network') {
+      setSourceId(id)
+      setLayers((value) => ({ ...value, network: true }))
+    }
   }
   const reset = () => {
     setKind('All')
@@ -598,6 +658,29 @@ export function LiveInventory() {
                 className={`resource-item ${selected === r.id ? 'selected' : ''}`}
                 aria-pressed={selected === r.id}
                 onClick={() => select(r.id)}
+                aria-haspopup={r.kind === 'Pod' ? 'menu' : undefined}
+                onContextMenu={
+                  r.kind === 'Pod'
+                    ? (event) => {
+                        event.preventDefault()
+                        openPodMenu(r.id, event.clientX, event.clientY)
+                      }
+                    : undefined
+                }
+                onKeyDown={
+                  r.kind === 'Pod'
+                    ? (event) => {
+                        if (
+                          event.key === 'ContextMenu' ||
+                          (event.shiftKey && event.key === 'F10')
+                        ) {
+                          event.preventDefault()
+                          const bounds = event.currentTarget.getBoundingClientRect()
+                          openPodMenu(r.id, bounds.left, bounds.bottom)
+                        }
+                      }
+                    : undefined
+                }
               >
                 <span
                   className="resource-glyph"
@@ -831,6 +914,48 @@ export function LiveInventory() {
               </button>
             ))}
           </div>
+          <details className="pod-issue-tray">
+            <summary>Pods needing inspection · {inspectionPods.length}</summary>
+            <p className="scope-note">
+              In the current namespace/application scope. Includes container issues and unknown
+              freshness; completed tasks and recovered history are not alarms. Click to focus the
+              exact pod.
+            </p>
+            {inspectionPods.slice(issueListPage * 10, (issueListPage + 1) * 10).map((pod) => (
+              <button
+                key={pod.id}
+                className="subtle-button"
+                onClick={() => runPodAction(pod.id, 'troubleshoot')}
+              >
+                Focus issue: {pod.name} · {pod.namespace}
+              </button>
+            ))}
+            {!inspectionPods.length && (
+              <p className="scope-note">
+                No pods needing inspection in this observed view. This does not prove application
+                correctness.
+              </p>
+            )}
+            {inspectionPods.length > 10 && (
+              <div className="pagination">
+                <button
+                  disabled={issueListPage === 0}
+                  onClick={() => setIssuePage(issueListPage - 1)}
+                >
+                  Previous issues
+                </button>
+                <span>
+                  {issueListPage + 1} / {Math.ceil(inspectionPods.length / 10)}
+                </span>
+                <button
+                  disabled={(issueListPage + 1) * 10 >= inspectionPods.length}
+                  onClick={() => setIssuePage(issueListPage + 1)}
+                >
+                  Next issues
+                </button>
+              </div>
+            )}
+          </details>
           <div className="scene live-house-scene">
             {snapshot ? (
               <SceneBoundary>
@@ -852,6 +977,7 @@ export function LiveInventory() {
                     motion={!paused && !reducedMotion && !live.stale}
                     fresh={fresh}
                     onSelect={select}
+                    onPodActions={openPodMenu}
                     layers={layers}
                     overview={!selected && kind === 'All' && query === '' && !onlyIssues}
                     endpointsFresh={
@@ -886,7 +1012,7 @@ export function LiveInventory() {
                   HOUSE = CLUSTER <span>ROOMS = OBSERVED NODES</span>
                 </div>
                 <div className="scene-hint">
-                  Drag to orbit · Scroll to zoom · Click a room, pod or container
+                  Drag to orbit · Scroll to zoom · Click to inspect · Right-click a pod for actions
                 </div>
               </>
             )}
@@ -1072,6 +1198,42 @@ export function LiveInventory() {
             <>
               <span className="eyebrow detail-kind">{current.kind}</span>
               <h3>{current.name}</h3>
+              {current.kind === 'Pod' && (
+                <>
+                  <button
+                    className="subtle-button pod-actions-trigger"
+                    aria-haspopup="menu"
+                    aria-expanded={menuPod?.id === current.id}
+                    onClick={(event) => {
+                      const bounds = event.currentTarget.getBoundingClientRect()
+                      openPodMenu(current.id, bounds.left, bounds.bottom)
+                    }}
+                  >
+                    Pod actions ⋯
+                  </button>
+                  {podAction &&
+                    podAction.session === snapshot?.sessionId &&
+                    podAction.id === current.id && (
+                      <PodWorkbench
+                        key={`${current.id}:${podAction.nonce}`}
+                        pod={current}
+                        containers={children.get(current.id) ?? []}
+                        action={podAction.action}
+                        fresh={fresh}
+                        onContainer={(id) => {
+                          select(id)
+                          if (podAction.action === 'logs')
+                            setEvidenceIntent({
+                              id,
+                              action: 'logs',
+                              nonce: Date.now(),
+                              session: snapshot!.sessionId,
+                            })
+                        }}
+                      />
+                    )}
+                </>
+              )}
               {current.kind === 'Node' && <SummaryText value={nodeSummaries.get(current.name)!} />}
               <span className={`state-badge ${signal(current)}`}>
                 {fresh(current) ? current.state : 'Unknown freshness'}
@@ -1096,8 +1258,24 @@ export function LiveInventory() {
                 key={`${snapshot?.sessionId}:${current.id}`}
                 resource={current}
                 fresh={fresh(current)}
+                intent={
+                  evidenceIntent &&
+                  evidenceIntent.session === snapshot?.sessionId &&
+                  evidenceIntent.id === current.id
+                    ? evidenceIntent
+                    : undefined
+                }
               />
-              <details className="identity-disclosure">
+              <details
+                className="identity-disclosure"
+                open={
+                  podAction?.id === current.id &&
+                  podAction.action === 'details' &&
+                  podAction.session === snapshot?.sessionId
+                    ? true
+                    : undefined
+                }
+              >
                 <summary>Identity, placement &amp; observation</summary>
                 <dl>
                   {(
@@ -1421,6 +1599,16 @@ export function LiveInventory() {
           )}
         </aside>
       </div>
+      {menuPod && podMenu && (
+        <PodActionsMenu
+          key={`${podMenu.id}:${podMenu.x}:${podMenu.y}`}
+          pod={menuPod}
+          x={podMenu.x}
+          y={podMenu.y}
+          onClose={closePodMenu}
+          onAction={(action) => runPodAction(menuPod.id, action)}
+        />
+      )}
     </main>
   )
 }

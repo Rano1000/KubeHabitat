@@ -73,6 +73,9 @@ Available in this branch:
   restart changes.
 - Independent pod/container alert colours and on-demand UID-scoped events and optional logs. See the
   [investigation guide](docs/investigation.md).
+- Pod actions from the scene, inventory or inspector: focus issues, choose container logs, inspect
+  relationships and copy manual troubleshooting commands. See the
+  [pod actions guide](docs/pod-actions.md).
 - Services, EndpointSlices, ingress routes and declared pod-to-pod NetworkPolicy checks.
 - Pod volumes, namespace claims, cluster volumes, storage classes and quota accounting.
 - Node CPU, memory and ephemeral storage capacity; optional Metrics API CPU/memory samples.

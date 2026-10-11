@@ -3,6 +3,7 @@ import themeHabitats from '../../docs/assets/theme-habitats.svg'
 import lifecycleEvidence from '../../docs/assets/lifecycle-evidence.svg'
 import componentSignals from '../../docs/assets/component-signals.svg'
 import investigationFlow from '../../docs/assets/investigation-flow.svg'
+import podActions from '../../docs/assets/pod-actions.svg'
 
 const phases = [
   [
@@ -79,6 +80,28 @@ export function Docs() {
         </p>
       </div>
       <div className="docs-grid">
+        <section className="doc-card wide">
+          <span className="eyebrow">POD ACTIONS / FOCUS THEN INSPECT</span>
+          <h2>Start with the pod.</h2>
+          <img
+            src={podActions}
+            alt="Focus an exact pod, open its actions, choose a container for evidence, and review manual troubleshooting commands."
+            style={{ width: '100%' }}
+          />
+          <p>
+            Open Pods needing inspection to focus an affected pod. Right-click its scene object or
+            inventory row, press Shift+F10 on the row, or use Pod actions in the inspector.
+          </p>
+          <p>
+            Choose details, reported events, container logs, troubleshooting, memory, networking or
+            storage. Logs require an explicit container and a current or previous run request.
+            Suggestions explain reported status; commands are copied and run manually after
+            reviewing the context.
+          </p>
+          <a className="text-link" href="#habitat">
+            Explore pod actions →
+          </a>
+        </section>
         <section className="doc-card wide">
           <span className="eyebrow">INVESTIGATION / PHASE 05</span>
           <h2>Follow the alert to its evidence.</h2>

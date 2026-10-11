@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LiveResource } from './useClusterSnapshot'
 import { fetchEvidence, validInvestigation, validLogs } from './investigation'
 import type { Investigation, LogEvidence } from './investigation'
@@ -6,9 +6,11 @@ import type { Investigation, LogEvidence } from './investigation'
 export function InvestigationPanel({
   resource,
   fresh,
+  intent,
 }: {
   resource: LiveResource
   fresh: boolean
+  intent?: { action: 'events' | 'logs'; nonce: number }
 }) {
   const [open, setOpen] = useState(false)
   const [events, setEvents] = useState<Investigation | null>(null)
@@ -17,49 +19,57 @@ export function InvestigationPanel({
   const [error, setError] = useState('')
   const request = useRef<AbortController | null>(null)
   useEffect(() => () => request.current?.abort(), [])
-  const load = async (previous?: boolean) => {
-    request.current?.abort()
-    const controller = new AbortController()
-    request.current = controller
-    const timeout = window.setTimeout(() => controller.abort(), 12000)
-    setError('')
-    setLoading(previous === undefined ? 'events' : 'logs')
-    if (previous === undefined) setEvents(null)
-    else setLogs(null)
-    try {
-      if (previous === undefined)
-        setEvents(
-          await fetchEvidence(
-            'investigation',
-            resource.id,
-            controller.signal,
-            (value): value is Investigation => validInvestigation(value, resource.id),
-          ),
-        )
-      else
-        setLogs(
-          await fetchEvidence(
-            'logs',
-            resource.id,
-            controller.signal,
-            (value): value is LogEvidence => validLogs(value, resource.id, previous),
-            previous,
-          ),
-        )
-    } catch (failure) {
-      if (request.current === controller)
-        setError(
-          controller.signal.aborted
-            ? 'Evidence request timed out. Retry when the backend is reachable.'
-            : failure instanceof Error
-              ? failure.message
-              : 'Evidence is unavailable.',
-        )
-    } finally {
-      window.clearTimeout(timeout)
-      if (request.current === controller) setLoading(null)
-    }
-  }
+  const load = useCallback(
+    async (previous?: boolean) => {
+      request.current?.abort()
+      const controller = new AbortController()
+      request.current = controller
+      const timeout = window.setTimeout(() => controller.abort(), 12000)
+      setError('')
+      setLoading(previous === undefined ? 'events' : 'logs')
+      if (previous === undefined) setEvents(null)
+      else setLogs(null)
+      try {
+        if (previous === undefined)
+          setEvents(
+            await fetchEvidence(
+              'investigation',
+              resource.id,
+              controller.signal,
+              (value): value is Investigation => validInvestigation(value, resource.id),
+            ),
+          )
+        else
+          setLogs(
+            await fetchEvidence(
+              'logs',
+              resource.id,
+              controller.signal,
+              (value): value is LogEvidence => validLogs(value, resource.id, previous),
+              previous,
+            ),
+          )
+      } catch (failure) {
+        if (request.current === controller)
+          setError(
+            controller.signal.aborted
+              ? 'Evidence request timed out. Retry when the backend is reachable.'
+              : failure instanceof Error
+                ? failure.message
+                : 'Evidence is unavailable.',
+          )
+      } finally {
+        window.clearTimeout(timeout)
+        if (request.current === controller) setLoading(null)
+      }
+    },
+    [resource.id],
+  )
+  useEffect(() => {
+    if (!intent) return
+    setOpen(true)
+    if (intent.action === 'events') void load()
+  }, [intent?.action, intent?.nonce, load])
   return (
     <section className="investigation-panel" aria-label="Investigation">
       <button

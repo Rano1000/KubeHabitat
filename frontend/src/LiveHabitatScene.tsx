@@ -37,6 +37,7 @@ type Props = {
   focusRevision: number
   fresh: (resource: LiveResource) => boolean
   onSelect: (id: string) => void
+  onPodActions?: (id: string, x: number, y: number) => void
   layers: { network: boolean; storage: boolean; capacity: boolean }
   policyEdge?: { from: string; to: string; verdict: string }
   overview?: boolean
@@ -635,7 +636,14 @@ function Pod({
         <meshBasicMaterial color={namespaceColor(resource.namespace ?? '')} />
       </mesh>
       {state === 'failed' && (
-        <group position={[pod.position[0], 0.18, pod.position[2]]}>
+        <group
+          position={[pod.position[0], 0.18, pod.position[2]]}
+          onContextMenu={(event) => {
+            event.stopPropagation()
+            event.nativeEvent.preventDefault()
+            props.onPodActions?.(resource.id, event.nativeEvent.clientX, event.nativeEvent.clientY)
+          }}
+        >
           {[0, 1, 2, 3].map((index) => (
             <mesh
               key={index}
@@ -656,7 +664,15 @@ function Pod({
           ))}
         </group>
       )}
-      <group ref={group} position={pod.position}>
+      <group
+        ref={group}
+        position={pod.position}
+        onContextMenu={(event) => {
+          event.stopPropagation()
+          event.nativeEvent.preventDefault()
+          props.onPodActions?.(resource.id, event.nativeEvent.clientX, event.nativeEvent.clientY)
+        }}
+      >
         {services.map((service, index) => (
           <mesh
             key={service.id}

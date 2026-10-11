@@ -11,6 +11,96 @@
   --amber: #f5b65b;
 }
 
+.pod-actions-menu {
+  position: fixed;
+  z-index: 100;
+  width: min(280px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface, #142231);
+  color: var(--ink, #dbe6f4);
+  box-shadow: 0 16px 50px #0005;
+}
+.pod-actions-menu > strong,
+.pod-actions-menu > small {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 4px 8px;
+}
+.pod-actions-menu > small {
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.pod-actions-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  padding: 10px 8px;
+  color: inherit;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pod-actions-menu button:is(:hover, :focus-visible) {
+  background: var(--accent-soft, #263c50);
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
+}
+.pod-workbench,
+.pod-issue-tray {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--surface-alt, #142231);
+  color: var(--ink, #dbe6f4);
+  margin: 14px 0;
+  font-size: 12px;
+}
+.pod-workbench h4 {
+  margin: 8px 0;
+  font-size: 15px;
+}
+.pod-workbench p {
+  line-height: 1.6;
+}
+.pod-issue-tray summary,
+.pod-command-list summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.pod-issue-tray > button {
+  margin: 4px;
+}
+.pod-diagnostic {
+  border-left: 2px solid var(--teal);
+  padding-left: 12px;
+  margin: 16px 0;
+}
+.pod-command-list pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 10px;
+  background: var(--surface, #0b1724);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  line-height: 1.7;
+}
+.pod-command-list > div {
+  margin: 16px 0;
+}
+.pod-container-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pod-actions-trigger {
+  margin: 6px 0;
+}
+
 .investigation-panel {
   margin: 18px 0;
   border: 1px solid var(--line);

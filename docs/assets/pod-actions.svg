@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 410" role="img" aria-labelledby="title desc">
+  <title id="title">Follow a pod signal into evidence</title>
+  <desc id="desc">Focus an observed pod, open its actions, choose a container, inspect events and logs, then review manual troubleshooting commands.</desc>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #dbe6f4 }
+    .small { font-size: 14px; fill: #a7bdcc }
+    .title { font-size: 21px; font-weight: 600 }
+    .pulse { animation: glow 3s ease-in-out infinite }
+    @keyframes glow { 50% { opacity: .55 } }
+    @media (prefers-reduced-motion: reduce) { .pulse { animation: none } }
+  </style>
+  <rect width="1080" height="410" rx="24" fill="#101c2c"/>
+  <text x="34" y="46" class="title">A pod is the doorway. Evidence stays specific.</text>
+  <text x="34" y="72" class="small">KubeHabitat · pod actions · read-only inspection</text>
+  <g stroke="#334f65" fill="#172a3a">
+    <rect x="28" y="102" width="284" height="245" rx="18"/>
+    <rect x="352" y="102" width="300" height="245" rx="18"/>
+    <rect x="694" y="102" width="358" height="245" rx="18"/>
+  </g>
+  <g fill="none" stroke="#7be0d4" stroke-width="2">
+    <path d="M313 226h36m-9-7 9 7-9 7M654 226h36m-9-7 9 7-9 7"/>
+    <ellipse cx="170" cy="209" rx="73" ry="59"/>
+    <ellipse cx="170" cy="209" rx="73" ry="22" opacity=".6"/>
+  </g>
+  <rect x="124" y="189" width="36" height="36" rx="6" fill="#7be0d4"/>
+  <rect x="180" y="189" width="36" height="36" rx="6" fill="#f07777" class="pulse"/>
+  <text x="52" y="135" class="title">1 · Focus the pod</text>
+  <text x="52" y="292" class="small">Exact pod UID · actual node</text>
+  <text x="52" y="316" class="small">Inner box alert ≠ shell failure</text>
+  <text x="376" y="135" class="title">2 · Choose an action</text>
+  <text x="376" y="179">Details · reported events</text>
+  <rect x="370" y="196" width="262" height="36" rx="8" fill="#26495a"/>
+  <text x="382" y="220">Logs → choose a container</text>
+  <text x="376" y="260">Memory · network · storage</text>
+  <text x="376" y="292" class="small">Right-click · Shift+F10</text>
+  <text x="376" y="316" class="small">Or use the Pod actions button</text>
+  <text x="718" y="135" class="title">3 · Inspect, then decide</text>
+  <text x="718" y="181">Reported status and conditions</text>
+  <text x="718" y="213">Current / previous logs on request</text>
+  <text x="718" y="245">Suggested checks, not proven causes</text>
+  <rect x="712" y="264" width="320" height="58" rx="8" fill="#0d1c28"/>
+  <text x="728" y="290" font-family="monospace">kubectl … describe pod …</text>
+  <text x="728" y="311" class="small">Copy · review context · run manually</text>
+  <text x="34" y="380" class="small">Workflow illustration · not live telemetry · missing or stale evidence remains explicit</text>
+</svg>

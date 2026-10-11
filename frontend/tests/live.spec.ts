@@ -50,6 +50,103 @@ function snapshot(revision = 1) {
   }
 }
 
+test('pod actions support right-click, keyboard, issue focus and explicit container log selection', async ({
+  page,
+}) => {
+  const current = snapshot()
+  current.resources.push({
+    ...current.resources[1],
+    id: 'Pod:observed-uid/app/sidecar',
+    name: 'sidecar',
+    state: 'Running',
+    ready: true,
+    reason: undefined,
+  })
+  let logReads = 0
+  await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: current }))
+  await page.route('**/api/v1/logs?*', (route) => {
+    logReads++
+    const params = new URL(route.request().url()).searchParams
+    return route.fulfill({
+      json: {
+        resourceId: params.get('resource'),
+        podUid: 'observed-uid',
+        state: 'available',
+        source: 'Kubernetes pods/log',
+        observedAt: current.generatedAt,
+        previous: params.get('previous') === 'true',
+        text: 'sidecar-specific evidence',
+        truncated: false,
+        tailLines: 200,
+        sinceSeconds: 900,
+        byteLimit: 65536,
+      },
+    })
+  })
+  await page.goto('/#habitat')
+  const inventory = page.getByRole('complementary', { name: 'Live resource inventory' })
+  const details = page.getByRole('complementary', { name: 'Live component details' })
+  const pod = inventory.getByRole('button', { name: /real-worker Pod/ })
+  await pod.click({ button: 'right' })
+  const menu = page.getByRole('menu', { name: 'Actions for pod real-worker' })
+  await expect(menu).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await pod.focus()
+  await page.keyboard.press('Shift+F10')
+  await expect(menu).toBeVisible()
+  await menu.getByRole('menuitem', { name: 'Container logs', exact: true }).click()
+  await expect(details.getByRole('button', { name: 'Inspect logs: worker' })).toBeVisible()
+  await expect(details.getByRole('button', { name: 'Inspect logs: sidecar' })).toBeVisible()
+  expect(logReads).toBe(0)
+  await details.getByRole('button', { name: 'Inspect logs: sidecar' }).click()
+  await expect(details.getByRole('heading', { name: 'sidecar', exact: true })).toBeVisible()
+  expect(logReads).toBe(0)
+  await details.getByRole('button', { name: 'Load current logs', exact: true }).click()
+  await expect(details.getByLabel('Container log text')).toHaveText('sidecar-specific evidence')
+  expect(logReads).toBe(1)
+  await page.getByText('Pods needing inspection · 1', { exact: true }).click()
+  await page.getByRole('button', { name: 'Focus issue: real-worker · shop', exact: true }).click()
+  await expect(
+    details.getByRole('heading', { name: 'Troubleshooting guide', exact: true }),
+  ).toBeVisible()
+  const workspace = details.getByRole('region', { name: 'Pod action workspace' })
+  await expect(workspace.getByText(/underlying cause needs/)).toBeVisible()
+  await expect(
+    workspace.locator('code').filter({ hasText: "--container 'worker'" }).first(),
+  ).toBeVisible()
+  await details.getByRole('button', { name: 'Pod actions ⋯', exact: true }).click()
+  await menu.getByRole('menuitem', { name: 'Storage attachments' }).click()
+  await expect(page.getByRole('button', { name: 'Show storage', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(
+    details.getByRole('heading', { name: 'Storage attachments', exact: true }),
+  ).toBeVisible()
+})
+
+test('pod action menu stays inside narrow screens and disappears when its UID leaves the cache', async ({
+  page,
+}) => {
+  const current = snapshot()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: current }))
+  await page.goto('/#habitat')
+  const inventory = page.getByRole('complementary', { name: 'Live resource inventory' })
+  await inventory.getByRole('button', { name: /real-worker Pod/ }).click({ button: 'right' })
+  const menu = page.getByRole('menu')
+  await expect(menu).toBeVisible()
+  const bounds = await menu.boundingBox()
+  expect(bounds.x).toBeGreaterThanOrEqual(0)
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390)
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(844)
+  current.revision++
+  current.resources = []
+  await expect(menu).toHaveCount(0, { timeout: 8000 })
+})
+
 test('live inventory inspects real identities without substituting demo components', async ({
   page,
 }) => {

@@ -6,6 +6,9 @@ Select a component in the scene or inventory, then open **Investigate component*
 on-demand Kubernetes read, separate from snapshot polling. **Refresh events** retrieves another
 evidence snapshot with its own time. Scene readiness and alert colours retain their own meanings.
 
+For a direct pod workflow, use the [pod actions menu](pod-actions.md): right-click a pod or choose
+**Pod actions** in its inspector to open details, container logs, events and troubleshooting checks.
+
 ## Reported events
 
 Events are matched using `involvedObject.uid`, then verified against the requested UID and
