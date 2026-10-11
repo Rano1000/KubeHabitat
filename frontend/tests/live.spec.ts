@@ -127,6 +127,28 @@ test('pod actions support right-click, keyboard, issue focus and explicit contai
   ).toBeVisible()
 })
 
+test('expanded monitoring keeps pod actions visible and usable in every theme', async ({
+  page,
+}) => {
+  await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: snapshot() }))
+  await page.goto('/#habitat')
+  await page.getByRole('button', { name: /real-worker Pod/ }).click()
+  await page.getByRole('button', { name: '⛶ Expand monitoring', exact: true }).click()
+  await page.getByRole('button', { name: 'Details', exact: true }).click()
+  const details = page.getByRole('complementary', { name: 'Live component details' })
+  const menu = page.getByRole('menu', { name: 'Actions for pod real-worker' })
+  for (const theme of ['midnight', 'garden', 'blueprint']) {
+    await page.getByLabel('Monitoring theme', { exact: true }).selectOption(theme)
+    await details.getByRole('button', { name: 'Pod actions ⋯', exact: true }).click()
+    await expect(menu).toBeVisible()
+    await menu.getByRole('menuitem', { name: 'Container logs', exact: true }).click()
+    await expect(details.getByRole('button', { name: 'Inspect logs: worker' })).toBeVisible()
+    await expect(menu).toHaveCount(0)
+  }
+  await page.getByRole('button', { name: 'Exit monitoring', exact: true }).click()
+  await expect(page.getByRole('button', { name: '⛶ Expand monitoring', exact: true })).toBeVisible()
+})
+
 test('pod action menu stays inside narrow screens and disappears when its UID leaves the cache', async ({
   page,
 }) => {

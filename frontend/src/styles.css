@@ -717,7 +717,7 @@ h1 {
   background: #0d1726;
   overflow: hidden;
 }
-.monitoring-expanded > :not(.live-workspace) {
+.monitoring-expanded > :not(.live-workspace):not(.pod-actions-menu) {
   display: none;
 }
 .monitoring-expanded .live-workspace {
