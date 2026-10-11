@@ -9,6 +9,12 @@ kind: ClusterRole
 metadata:
   name: kubehabitat-observer
 rules:
+  - apiGroups: [apps]
+    resources: [deployments, replicasets, statefulsets, daemonsets]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
   - apiGroups: ['']
     resources:
       [nodes, namespaces, pods, services, persistentvolumeclaims, persistentvolumes, resourcequotas]

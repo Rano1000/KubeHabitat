@@ -240,6 +240,15 @@ export function ResourceGlyph({ kind }: { kind: string }) {
           <rect x="4" y="4" width="16" height="16" rx={theme === 'slate' ? 2 : 5} />
           <path d="M8 9h8m-8 6h5" />
         </>
+      ) : ['Deployment', 'ReplicaSet', 'StatefulSet', 'DaemonSet', 'Job', 'CronJob'].includes(
+          kind,
+        ) ? (
+        <>
+          <rect x="8" y="2" width="8" height="6" rx="2" />
+          <path d="M12 8v5M5 13h14M5 13v3m14-3v3" />
+          <rect x="2" y="16" width="6" height="6" rx="1.5" />
+          <rect x="16" y="16" width="6" height="6" rx="1.5" />
+        </>
       ) : kind === 'Namespace' ? (
         <>
           <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />

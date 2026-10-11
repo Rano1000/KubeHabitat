@@ -1980,3 +1980,77 @@ pre {
   padding-top: 0.25rem;
   border-top: 1px solid var(--line);
 }
+/* Evidence stays in the inspector so the default cluster view remains quiet. */
+.ownership-card {
+  margin-block: 1rem;
+}
+.ownership-card ol {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  border-left: 2px solid var(--line);
+}
+.ownership-card li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.45rem 0.75rem;
+}
+.ownership-card li > small {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.65rem;
+}
+.ownership-card .text-link {
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.metric-trends {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.metric-trend {
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  padding: 0.55rem;
+}
+.metric-trend svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.trend-baseline {
+  stroke: currentColor;
+  opacity: 0.2;
+  fill: none;
+}
+.trend-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.trend-dot {
+  fill: currentColor;
+}
+.metric-trend:has(.cpu) {
+  color: var(--teal);
+}
+.metric-trend:has(.memory) {
+  color: var(--ink, #dbe6f4);
+}
+.metric-config {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.metric-config div {
+  min-width: 0;
+}
+.metric-config dt {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+.metric-config dd {
+  margin: 0.2rem 0;
+  font-size: 0.9rem;
+}

@@ -5,6 +5,7 @@ import lifecycleEvidence from '../../docs/assets/lifecycle-evidence.svg'
 import componentSignals from '../../docs/assets/component-signals.svg'
 import investigationFlow from '../../docs/assets/investigation-flow.svg'
 import podActions from '../../docs/assets/pod-actions.svg'
+import metricsOwnership from '../../docs/assets/metrics-ownership.svg'
 
 const phases = [
   [
@@ -46,8 +47,8 @@ const phases = [
   [
     '06',
     'Metrics & dependencies',
-    'Initial layers',
-    'Explain CPU, memory, workload ownership, services, and persistent storage.',
+    'In review',
+    'Timestamped CPU and memory samples, bounded inspector trends and observed UID-based workload ownership. Real-provider validation remains open.',
   ],
   [
     '07',
@@ -81,6 +82,26 @@ export function Docs() {
         </p>
       </div>
       <div className="docs-grid">
+        <section className="doc-card wide">
+          <span className="eyebrow">METRICS / OWNERSHIP</span>
+          <h2>Follow the workload. Read the evidence.</h2>
+          <img
+            src={metricsOwnership}
+            alt="Container, pod, ReplicaSet and Deployment linked by observed identities, with CPU and memory sample evidence kept separate from configuration."
+            style={{ width: '100%' }}
+          />
+          <p>
+            Open a pod or container to follow its exact controlling owner. Each available ancestor
+            is clickable; missing owners stay explicit. Search the inventory for Deployments,
+            StatefulSets, DaemonSets, Jobs or CronJobs.
+          </p>
+          <p>
+            CPU and memory measurements include timestamps and the CPU averaging window. A small
+            trend collects samples while the inspector is open. Gaps break the line, unknown usage
+            stays unknown, and requests, limits and capacity remain separate from consumption. This
+            is live evidence, not durable replay.
+          </p>
+        </section>
         <section className="doc-card wide">
           <span className="eyebrow">POD ACTIONS / FOCUS THEN INSPECT</span>
           <h2>Start with the pod.</h2>

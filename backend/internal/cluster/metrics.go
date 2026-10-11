@@ -41,6 +41,21 @@ func (s *Store) StartMetrics(ctx context.Context, client rest.Interface) {
 func (s *Store) pollMetrics(ctx context.Context, client rest.Interface) {
 	// Bind samples to the currently observed UID, not a later object with the same name.
 	identities := s.Snapshot().Resources
+	nodes, pods := map[string]Resource{}, map[string]Resource{}
+	children := map[string]map[string]Resource{}
+	for _, r := range identities {
+		switch r.Kind {
+		case "Node":
+			nodes[r.Name] = r
+		case "Pod":
+			pods[r.Namespace+"/"+r.Name] = r
+		case "Container":
+			if children[r.Parent] == nil {
+				children[r.Parent] = map[string]Resource{}
+			}
+			children[r.Parent][r.Name] = r
+		}
+	}
 	usage := map[string]Usage{}
 	state := Telemetry{State: "observing", Reason: "Kubernetes Metrics API · CPU and memory working set"}
 	for _, kind := range []string{"nodes", "pods"} {
@@ -51,6 +66,9 @@ func (s *Store) pollMetrics(ctx context.Context, client rest.Interface) {
 			state = Telemetry{State: "unavailable", Reason: "Metrics API unavailable; usage is unknown"}
 			if apierrors.IsForbidden(err) || apierrors.IsUnauthorized(err) {
 				state = Telemetry{State: "denied", Reason: "Metrics API read access denied"}
+			}
+			if apierrors.IsUnauthorized(err) {
+				state.Reason = "Kubernetes credentials rejected or expired; usage is unknown"
 			}
 			usage = map[string]Usage{}
 			break
@@ -65,31 +83,54 @@ func (s *Store) pollMetrics(ctx context.Context, client rest.Interface) {
 		}
 		for _, sample := range list.Items {
 			at, err := time.Parse(time.RFC3339, sample.Timestamp)
-			if err != nil || time.Since(at) > 90*time.Second || time.Until(at) > 5*time.Second {
+			window, windowErr := time.ParseDuration(sample.Window)
+			if err != nil || windowErr != nil || window <= 0 || time.Since(at) > 90*time.Second || time.Until(at) > 5*time.Second {
 				continue
 			}
-			makeUsage := func(v core.ResourceList) Usage {
-				cpu, memory := v[core.ResourceCPU], v[core.ResourceMemory]
-				return Usage{CPUMilli: cpu.MilliValue(), MemoryBytes: memory.Value(), Timestamp: sample.Timestamp, Window: sample.Window}
+			makeUsage := func(v core.ResourceList) (Usage, bool) {
+				cpu, hasCPU := v[core.ResourceCPU]
+				memory, hasMemory := v[core.ResourceMemory]
+				if !hasCPU || !hasMemory || cpu.Sign() < 0 || memory.Sign() < 0 {
+					return Usage{}, false
+				}
+				return Usage{CPUMilli: cpu.MilliValue(), MemoryBytes: memory.Value(), Timestamp: sample.Timestamp, Window: sample.Window}, true
 			}
-			for _, r := range identities {
-				if kind == "nodes" && r.Kind == "Node" && r.Name == sample.Name {
-					usage[r.ID] = makeUsage(sample.Usage)
+			r, exists := nodes[sample.Name]
+			if kind == "pods" {
+				r, exists = pods[sample.Namespace+"/"+sample.Name]
+			}
+			if !exists || (sample.UID != "" && string(sample.UID) != r.UID) || (r.CreatedAt != nil && at.Before(*r.CreatedAt)) {
+				continue
+			}
+			if kind == "nodes" {
+				if u, valid := makeUsage(sample.Usage); valid {
+					usage[r.ID] = u
 				}
-				if kind == "pods" && r.Kind == "Pod" && r.Name == sample.Name && r.Namespace == sample.Namespace {
-					total := Usage{Timestamp: sample.Timestamp, Window: sample.Window}
-					for _, c := range sample.Containers {
-						u := makeUsage(c.Usage)
-						total.CPUMilli += u.CPUMilli
-						total.MemoryBytes += u.MemoryBytes
-						for _, child := range identities {
-							if child.Kind == "Container" && child.Parent == r.ID && child.Name == c.Name {
-								usage[child.ID] = u
-							}
-						}
-					}
-					usage[r.ID] = total
+				continue
+			}
+			total := Usage{Timestamp: sample.Timestamp, Window: sample.Window}
+			seen := map[string]bool{}
+			complete := len(sample.Containers) > 0
+			for _, c := range sample.Containers {
+				child, known := children[r.ID][c.Name]
+				u, valid := makeUsage(c.Usage)
+				if !known || !valid || seen[c.Name] {
+					complete = false
+					continue
 				}
+				seen[c.Name] = true
+				usage[child.ID] = u
+				total.CPUMilli += u.CPUMilli
+				total.MemoryBytes += u.MemoryBytes
+			}
+			for name, child := range children[r.ID] {
+				if (child.ContainerType == "app" || child.State == "Running") && !seen[name] {
+					complete = false
+				}
+			}
+			// A missing sidecar sample must not look like a complete pod total or measured zero.
+			if complete {
+				usage[r.ID] = total
 			}
 		}
 	}

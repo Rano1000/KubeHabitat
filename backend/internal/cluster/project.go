@@ -9,9 +9,16 @@ import (
 )
 
 func base(kind string, meta metav1.ObjectMeta, now time.Time) Resource {
-	return Resource{ID: kind + ":" + string(meta.UID), UID: string(meta.UID), Kind: kind,
+	r := Resource{ID: kind + ":" + string(meta.UID), UID: string(meta.UID), Kind: kind,
 		Name: meta.Name, Namespace: meta.Namespace, ResourceVersion: meta.ResourceVersion,
-		ObservedAt: now, State: "Unknown", Deleting: meta.DeletionTimestamp != nil}
+		ObservedAt: now, CreatedAt: statusTime(meta.CreationTimestamp), State: "Unknown", Deleting: meta.DeletionTimestamp != nil}
+	for _, owner := range meta.OwnerReferences {
+		if owner.Controller != nil && *owner.Controller {
+			r.Owner = &Owner{UID: string(owner.UID), Kind: owner.Kind, Name: owner.Name}
+			break
+		}
+	}
+	return r
 }
 
 func statusTime(value metav1.Time) *time.Time {
@@ -163,6 +170,9 @@ func project(obj any, now time.Time) []Resource {
 		addContainers(ephemeral, value.Status.EphemeralContainerStatuses, "ephemeral")
 		result = append(result, podVolumes(value, r, now)...)
 		return result
+	}
+	if workload := projectWorkload(obj, now); workload != nil {
+		return workload
 	}
 	return projectTopology(obj, now)
 }

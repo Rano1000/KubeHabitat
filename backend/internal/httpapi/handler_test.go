@@ -108,7 +108,7 @@ func TestLiveSnapshotNeverSubstitutesDemoData(t *testing.T) {
 		if err := json.Unmarshal(w.Body.Bytes(), &snapshot); err != nil {
 			t.Fatal(err)
 		}
-		if w.Code != http.StatusOK || snapshot.DataSource != "kubernetes" || snapshot.Connection != "disconnected" || len(snapshot.Resources) != 0 || len(snapshot.Visibility) != 11 || snapshot.Metrics.State != "unavailable" {
+		if w.Code != http.StatusOK || snapshot.DataSource != "kubernetes" || snapshot.Connection != "disconnected" || len(snapshot.Resources) != 0 || len(snapshot.Visibility) != 17 || snapshot.Metrics.State != "unavailable" {
 			t.Fatalf("initial snapshot invented a connected cluster: %+v", snapshot)
 		}
 	}

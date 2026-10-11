@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
     "test:e2e": "playwright test",
-    "test:layout": "node --experimental-strip-types --test tests/layout.test.mjs tests/network.test.mjs tests/scale.test.mjs tests/lifecycle.test.mjs tests/component-appearance.test.mjs tests/investigation.test.mjs tests/pod-troubleshooting.test.mjs",
+    "test:layout": "node --experimental-strip-types --test tests/layout.test.mjs tests/network.test.mjs tests/scale.test.mjs tests/lifecycle.test.mjs tests/component-appearance.test.mjs tests/investigation.test.mjs tests/pod-troubleshooting.test.mjs tests/workload-evidence.test.mjs",
     "benchmark:scale": "node --experimental-strip-types tests/scale-benchmark.mjs",
     "format": "prettier --write .. --ignore-path ../.prettierignore",
     "format:check": "prettier --check .. --ignore-path ../.prettierignore"

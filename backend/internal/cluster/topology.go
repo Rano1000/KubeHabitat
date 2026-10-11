@@ -11,7 +11,7 @@ import (
 
 type Policy = network.NetworkPolicySpec
 
-var observedKinds = []string{"Node", "Namespace", "Pod", "Service", "EndpointSlice", "Ingress", "NetworkPolicy", "PersistentVolumeClaim", "PersistentVolume", "StorageClass", "ResourceQuota"}
+var observedKinds = []string{"Node", "Namespace", "Pod", "Service", "EndpointSlice", "Ingress", "NetworkPolicy", "PersistentVolumeClaim", "PersistentVolume", "StorageClass", "ResourceQuota", "Deployment", "ReplicaSet", "StatefulSet", "DaemonSet", "Job", "CronJob"}
 
 func requests(r core.ResourceList, prefix string, details map[string]string) {
 	for _, key := range []core.ResourceName{core.ResourceCPU, core.ResourceMemory, core.ResourceEphemeralStorage, core.ResourceStorage} {

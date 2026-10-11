@@ -67,10 +67,12 @@ Production authentication and supported deployment packaging remain Phase 09.
 
 ## Next integrations
 
-Controller ownership, custom-resource extensions, recorded lifecycle/history, evidence-backed
-investigation, traffic telemetry and storage consumption will extend the same identity and freshness
-boundary. Namespaces span node rooms; container restarts differ from pod replacements; successful
-completion differs from failure. Missing observations never imply a confirmed crash.
+Controlling workload identities and a bounded inspector sample history now extend the same identity
+boundary. See [metrics and ownership](metrics-and-ownership.md). Custom-resource extensions,
+recorded lifecycle/history, evidence-backed investigation, traffic telemetry and storage consumption
+will extend the same identity and freshness boundary. Namespaces span node rooms; container restarts
+differ from pod replacements; successful completion differs from failure. Missing observations never
+imply a confirmed crash.
 
 See the [live connection guide](live-connection.md), [specification](product-spec.md),
 [roadmap](roadmap.md) and [original foundation decision](decisions/0001-foundation.md).

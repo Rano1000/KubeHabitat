@@ -16,17 +16,18 @@ import (
 )
 
 type Store struct {
-	mu             sync.RWMutex
-	name, session  string
-	revision       uint64
-	objects        map[string][]Resource
-	visibility     map[string]Visibility
-	informers      map[string]cache.SharedIndexInformer
-	metrics        Telemetry
-	usage          map[string]Usage
-	evidenceClient kubernetes.Interface
-	logsEnabled    bool
-	logReader      func(context.Context, string, string, *corev1.PodLogOptions) (io.ReadCloser, error)
+	mu              sync.RWMutex
+	name, session   string
+	revision        uint64
+	objects         map[string][]Resource
+	visibility      map[string]Visibility
+	informers       map[string]cache.SharedIndexInformer
+	watchGeneration map[string]uint64
+	metrics         Telemetry
+	usage           map[string]Usage
+	evidenceClient  kubernetes.Interface
+	logsEnabled     bool
+	logReader       func(context.Context, string, string, *corev1.PodLogOptions) (io.ReadCloser, error)
 }
 
 func NewStore(name string) *Store {
@@ -37,6 +38,7 @@ func NewStore(name string) *Store {
 	s := &Store{name: name, session: hex.EncodeToString(token[:]), objects: map[string][]Resource{}, visibility: map[string]Visibility{}, informers: map[string]cache.SharedIndexInformer{}}
 	s.metrics = Telemetry{State: "unavailable", Reason: "Metrics API has not been observed"}
 	s.usage = map[string]Usage{}
+	s.watchGeneration = map[string]uint64{}
 	for _, kind := range observedKinds {
 		s.visibility[kind] = Visibility{Kind: kind, State: "connecting"}
 	}
@@ -80,6 +82,27 @@ func (s *Store) update(previous, current any) {
 func (s *Store) transport(kind string, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.setTransport(kind, err)
+}
+
+func (s *Store) beginWatch(kind string) uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.watchGeneration[kind]++
+	return s.watchGeneration[kind]
+}
+
+func (s *Store) watchTransport(kind string, generation uint64, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.watchGeneration[kind] != generation {
+		return
+	}
+	s.setTransport(kind, err)
+}
+
+// Caller holds the store lock. Late callbacks cannot invalidate a replacement watch.
+func (s *Store) setTransport(kind string, err error) {
 	v := s.visibility[kind]
 	if err == nil {
 		now := time.Now().UTC()
@@ -92,6 +115,9 @@ func (s *Store) transport(kind string, err error) {
 		v.State, v.Reason = "reconnecting", "API connection interrupted; cached observations may be stale"
 		if apierrors.IsForbidden(err) || apierrors.IsUnauthorized(err) {
 			v.State, v.Reason = "denied", "Read access denied for this resource kind"
+		}
+		if apierrors.IsUnauthorized(err) {
+			v.Reason = "Kubernetes credentials rejected or expired; renew the connection credentials"
 		}
 	}
 	s.visibility[kind] = v

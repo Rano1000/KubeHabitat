@@ -31,7 +31,16 @@ export type ScaleLayout = HabitatLayout & {
 
 export function warning(r: LiveResource) {
   return (
-    ['NotReady', 'Failed', 'Waiting', 'Pending', 'Unscheduled', 'Lost'].includes(r.state) ||
+    [
+      'NotReady',
+      'Failed',
+      'Waiting',
+      'Pending',
+      'Unscheduled',
+      'Lost',
+      'Degraded',
+      'Reconciling',
+    ].includes(r.state) ||
     (r.state === 'Terminated' && r.exitCode !== undefined && r.exitCode !== 0) ||
     (r.state === 'Running' && r.ready === false)
   )
@@ -136,8 +145,15 @@ export function applicationScope(resources: LiveResource[], key: string) {
   }
   for (const r of resources) if (r.parent && ids.has(r.parent)) ids.add(r.id)
   const pending = [...ids]
-  for (let i = 0; i < pending.length; i++)
-    for (const link of byId.get(pending[i])?.links ?? []) {
+  for (let i = 0; i < pending.length; i++) {
+    const source = byId.get(pending[i])
+    const owner = source?.owner
+    const controller = owner && targets.get(`${owner.kind}/uid/${owner.uid}`)
+    if (controller && controller.namespace === source?.namespace && !ids.has(controller.id)) {
+      ids.add(controller.id)
+      pending.push(controller.id)
+    }
+    for (const link of source?.links ?? []) {
       const target = resolve(link)
       // Do not pull unrelated endpoint pods into an application merely because it shares a Service.
       if (target && !['Pod', 'Container'].includes(target.kind) && !ids.has(target.id)) {
@@ -145,6 +161,7 @@ export function applicationScope(resources: LiveResource[], key: string) {
         pending.push(target.id)
       }
     }
+  }
   return resources.filter((r) => r.kind === 'Node' || r.kind === 'Namespace' || ids.has(r.id))
 }
 

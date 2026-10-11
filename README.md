@@ -44,6 +44,9 @@ information an engineer can inspect.
 | Amber inner box               | Container issue, distinct from pod replacement                |
 | Guided focus                  | Selection links the inventory, scene, and inspector           |
 
+Read the [metrics and ownership guide](docs/metrics-and-ownership.md) for measured samples, short
+inspector trends and controlling workload references.
+
 Read the [product specification](docs/product-spec.md) for lifecycle rules, evidence requirements,
 and the limits of the metaphor.
 

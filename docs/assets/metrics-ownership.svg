@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="380" viewBox="0 0 1120 380" role="img" aria-labelledby="title desc">
+<title id="title">KubeHabitat: follow ownership, inspect measured evidence</title>
+<desc id="desc">Container, Pod, ReplicaSet and Deployment connect through observed identities. Separate CPU and memory trends stop across missing telemetry. Configuration is distinct from usage.</desc>
+<style>text{font-family:system-ui,sans-serif;fill:#e2edf7}.muted{fill:#a8bacd;font-size:14px}.box{fill:#172a40;stroke:#36506c;stroke-width:1.5}.trace{fill:none;stroke:#78ded2;stroke-width:3;stroke-linecap:round}.pulse{animation:glow 3s ease-in-out infinite}@keyframes glow{50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.pulse{animation:none}}</style>
+<rect width="1120" height="380" rx="24" fill="#0e1929"/>
+<text x="38" y="46" font-size="23" font-weight="650">Follow the workload. Read the evidence.</text>
+<text x="38" y="74" class="muted">Exact identities • explicit availability • a quiet cluster overview</text>
+<g transform="translate(38 110)"><rect class="box" width="148" height="86" rx="16"/><rect x="16" y="18" width="22" height="22" rx="6" fill="#78ded2"/><text x="16" y="66" font-size="16">Container</text></g>
+<g transform="translate(234 110)"><rect class="box" width="148" height="86" rx="16"/><circle cx="28" cy="28" r="13" fill="none" stroke="#78ded2" stroke-width="2.5"/><text x="16" y="66" font-size="16">Pod</text></g>
+<g transform="translate(430 110)"><rect class="box" width="148" height="86" rx="16"/><path d="M20 20h18v12H20zM20 40h9v9h-9zm18 0h9v9h-9z" fill="#adc4ff"/><text x="16" y="66" font-size="16">ReplicaSet</text></g>
+<g transform="translate(626 110)"><rect class="box" width="156" height="86" rx="16"/><path d="M20 20h22v22H20z" fill="#adc4ff"/><text x="16" y="66" font-size="16">Deployment</text></g>
+<path d="M194 153h32m164 0h32m164 0h32" stroke="#78ded2" stroke-width="2" stroke-dasharray="5 5" class="pulse"/>
+<text x="38" y="232" class="muted">Clickable ancestry from controlling owner references; never guessed from names.</text>
+<rect x="820" y="110" width="260" height="150" rx="16" class="box"/><text x="838" y="136" font-size="15">CPU · mCPU</text><path d="M838 180l28-12 25 6 27-22m46 10 24-6 27 12 25-20" class="trace"/><text x="938" y="187" class="muted">gap</text><text x="838" y="220" class="muted">Memory working set · MiB</text><text x="838" y="246" class="muted">Timestamp + CPU window</text>
+<rect x="38" y="283" width="1042" height="57" rx="14" fill="#20334a"/><text x="58" y="318" font-size="16">Measured usage ≠ requests / limits / capacity. Missing telemetry ≠ measured zero.</text>
+</svg>

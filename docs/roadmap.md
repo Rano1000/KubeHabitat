@@ -14,7 +14,7 @@ throughput supports estimates.
 | 03    | Real cluster house and spatial navigation         | In review |
 | 04    | Accurate workload lifecycle animations            | In review |
 | 05    | Investigation and inspectable evidence            | In review |
-| 06    | Metrics, ownership, services, storage             | Planned   |
+| 06    | Metrics, ownership, services, storage             | In review |
 | 07    | Optional observed traffic                         | Planned   |
 | 08    | History, scale, accessibility                     | In review |
 | 09    | Packaging, deployment, public release             | Planned   |
@@ -96,6 +96,11 @@ show provenance/freshness.
 unverified cause is presented as fact.
 
 ## 06 · Metrics and dependencies
+
+See the [Phase 06 delivery record](phase-06-delivery.md) and
+[metrics and ownership guide](metrics-and-ownership.md). Controlling workload resources, UID-based
+ancestry and bounded inspector sample trends are implemented. Real-provider and
+representative-controller acceptance remain open.
 
 Integrate CPU/memory separately from requests, limits, and capacity. Add owners,
 services/EndpointSlices, PVC/PV links, and optional external storage.

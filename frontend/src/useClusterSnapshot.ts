@@ -14,6 +14,12 @@ export const liveKinds = [
   'PersistentVolume',
   'StorageClass',
   'ResourceQuota',
+  'Deployment',
+  'ReplicaSet',
+  'StatefulSet',
+  'DaemonSet',
+  'Job',
+  'CronJob',
 ] as const
 export type Selector = {
   matchLabels?: Record<string, string>
@@ -49,6 +55,7 @@ export type LiveResource = {
   parent?: string
   resourceVersion: string
   observedAt: string
+  createdAt?: string
   phase?: string
   state: string
   ready?: boolean
@@ -241,6 +248,7 @@ export function parseSnapshot(value: unknown): ClusterSnapshot {
     if (r.exitCode !== undefined && !Number.isInteger(r.exitCode))
       throw new Error('Invalid exit code')
     if (r.startedAt !== undefined && !date(r.startedAt)) throw new Error('Invalid start time')
+    if (r.createdAt !== undefined && !date(r.createdAt)) throw new Error('Invalid creation time')
     for (const field of ['termination', 'lastTermination']) {
       const evidence = r[field]
       if (

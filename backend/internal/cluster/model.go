@@ -29,6 +29,7 @@ type Resource struct {
 	Parent          string            `json:"parent,omitempty"`
 	ResourceVersion string            `json:"resourceVersion"`
 	ObservedAt      time.Time         `json:"observedAt"`
+	CreatedAt       *time.Time        `json:"createdAt,omitempty"`
 	Phase           string            `json:"phase,omitempty"`
 	State           string            `json:"state"`
 	Ready           *bool             `json:"ready,omitempty"`

@@ -26,6 +26,7 @@ import { SceneBoundary } from './SceneBoundary'
 import { useMonitoringView } from './useMonitoringView'
 import { ThemeSelector, ResourceGlyph } from './themes'
 import { LifecycleEvidence } from './LifecycleEvidence'
+import { MetricsCard, OwnershipCard } from './WorkloadEvidence'
 import { InvestigationPanel } from './InvestigationPanel'
 import { PodActionsMenu } from './PodActionsMenu'
 import { PodWorkbench } from './PodWorkbench'
@@ -55,6 +56,10 @@ const kindLabels: Partial<Record<LiveKind, string>> = {
   PersistentVolume: 'PVs',
   ResourceQuota: 'Quotas',
   Volume: 'Pod volumes',
+  ReplicaSet: 'ReplicaSets',
+  StatefulSet: 'StatefulSets',
+  DaemonSet: 'DaemonSets',
+  CronJob: 'CronJobs',
 }
 
 function stamp(value?: string) {
@@ -579,8 +584,8 @@ export function LiveInventory() {
             ))}
           </select>
           <p className="scope-note">
-            Applications follow explicit labels. Referenced Services and storage are included as
-            dependencies.
+            Applications follow explicit labels. Controlling owners, referenced Services and storage
+            are included as dependencies.
           </p>
           <button
             className="subtle-button issue-filter"
@@ -1254,8 +1259,25 @@ export function LiveInventory() {
                   onSelect={select}
                 />
               )}
+              {[
+                'Pod',
+                'Container',
+                'Deployment',
+                'ReplicaSet',
+                'StatefulSet',
+                'DaemonSet',
+                'Job',
+                'CronJob',
+              ].includes(current.kind) && (
+                <OwnershipCard
+                  resource={current}
+                  resources={allResources}
+                  fresh={fresh}
+                  onSelect={select}
+                />
+              )}
               <InvestigationPanel
-                key={`${snapshot?.sessionId}:${current.id}`}
+                key={`investigation:${snapshot?.sessionId}:${current.id}`}
                 resource={current}
                 fresh={fresh(current)}
                 intent={
@@ -1497,32 +1519,12 @@ export function LiveInventory() {
                 </section>
               )}
               {['Node', 'Pod', 'Container'].includes(current.kind) && (
-                <section className="usage-card">
-                  <h4>Measured usage</h4>
-                  {current.usage && fresh(current) ? (
-                    <>
-                      <div className="usage-values">
-                        <div>
-                          <span>CPU</span>
-                          <strong>{current.usage.cpuMilli} m</strong>
-                        </div>
-                        <div>
-                          <span>Memory working set</span>
-                          <strong>{(current.usage.memoryBytes / 1048576).toFixed(1)} MiB</strong>
-                        </div>
-                      </div>
-                      <p className="scope-note">
-                        Metrics API · {stamp(current.usage.timestamp)} · sample window{' '}
-                        {current.usage.window}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="scope-note">
-                      Usage unknown.{' '}
-                      {snapshot?.metrics?.reason ?? 'Metrics API samples are unavailable.'}
-                    </p>
-                  )}
-                </section>
+                <MetricsCard
+                  key={`metrics:${snapshot?.sessionId}:${current.id}`}
+                  resource={current}
+                  fresh={fresh(current)}
+                  reason={snapshot?.metrics?.reason}
+                />
               )}
               {current.links && current.links.length > 0 && (
                 <section className="relationship-list">
