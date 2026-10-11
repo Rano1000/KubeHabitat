@@ -64,7 +64,27 @@ later retained stale observations after its credential expired. Restarting on po
 with an existing process. Fresh preview verification of this refinement remains pending on the
 regular-terminal launcher; no current health verdict is inferred from the cached review.
 
-## Remaining acceptance work
+## Human Service guides on 2026-10-11
+
+Services now use clickable human figures with uniforms, labels and walking limbs. One figure per
+Service follows a deterministic patrol around rooms containing its observed endpoint pods. Services
+without observed pod destinations remain at their markers. Pause, system reduced motion and stale
+Service/endpoint discovery stop movement. Blue connectors retain configured references; no packet
+rate or security enforcement is invented.
+
+The production build and all 23 layout/policy tests pass. The additional tests cover cross-node
+destination membership, unrelated nodes and stale endpoint UIDs. The regular-terminal preview on
+port 19095 was reviewed with current observations from all 11 supported APIs. Inventory selection
+opened the shared Service inspector with its actual destination and TCP port. Screenshots confirmed
+the human figure, changing patrol positions and limb pose, and paused/resumed motion. No error-level
+browser logs were returned; the existing Three.js Clock deprecation warning remains.
+
+Clicking the human figure's body in a focused Services view opened the correct Service inspector.
+The camera includes the full patrol bounds when focusing a Service, so walking does not leave a
+frame centred only on its starting marker. Further keyboard accessibility review remains open. The
+full automated browser suite remains locally unverified.
+
+## Further acceptance work
 
 Refine house artwork with the user; verify camera and keyboard navigation across further cluster
 sizes; complete denied access/outage/recovery lab scenarios. Later-phase telemetry,

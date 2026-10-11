@@ -84,7 +84,8 @@
     <rect x="47" y="136" width="16" height="16" rx="3" fill="#afdedf" />
     <circle cx="187" cy="144" r="22" class="pod" />
     <rect x="179" y="136" width="16" height="16" rx="3" fill="#afdedf" />
-    <path d="M85 192 103 182 121 192V211H85Z" fill="#4d8aca" stroke="#8ec5ff" />
+    <circle cx="103" cy="184" r="6" fill="#dfbc98" />
+    <path d="M95 196Q103 188 111 196M103 192V207M103 207 97 218M103 207 109 218" fill="none" stroke="#8ec5ff" stroke-width="5" stroke-linecap="round" />
     <path d="M103 184 55 167M119 192 187 167" class="route" />
     <text x="150" y="214" class="small">Service</text>
     <text x="0" y="267" class="muted">Nodes · namespaces · pods · Services</text>

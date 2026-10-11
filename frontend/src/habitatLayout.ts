@@ -1,5 +1,6 @@
 import type { LiveResource } from './useClusterSnapshot'
 import { matches } from './networkPolicy.ts'
+import { servicePatrol } from './serviceGuide.ts'
 
 export type Point = [number, number, number]
 export type PlacedContainer = { resource: LiveResource; position: Point; offset: Point }
@@ -223,7 +224,7 @@ export function buildHabitatLayout(
       )
         edges.push({ from: policy.id, to: pod.id, relation: 'policy selects pod' })
     }
-  return {
+  const layout: HabitatLayout = {
     resources,
     rooms,
     pods: [...rooms.flatMap((r) => r.pods), ...waitingPods],
@@ -241,6 +242,11 @@ export function buildHabitatLayout(
     objects,
     edges,
   }
+  for (const object of objects.filter((o) => o.resource.kind === 'Service')) {
+    object.position = servicePatrol(layout, object.resource.id).points[0]
+    positions.set(object.resource.id, object.position)
+  }
+  return layout
 }
 
 export function sceneHighlights(

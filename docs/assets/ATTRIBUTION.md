@@ -30,3 +30,7 @@ support reduced motion.
 `focused-exploration.svg` is original source-authored KubeHabitat artwork illustrating progressive
 inspection. Its gentle highlight animation respects reduced motion. It is a workflow illustration,
 not a live cluster screenshot.
+
+`service-guide-preview.png` is a screenshot of the implemented live local lab, captured on
+2026-10-11. The human Service figure uses original source-authored Three.js geometry. Its patrol
+illustrates configured destinations and does not display measured traffic or security enforcement.

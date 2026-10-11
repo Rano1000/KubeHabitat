@@ -7,6 +7,7 @@ import { namespaceColor, sceneHighlights } from './habitatLayout'
 import type { HabitatLayout, PlacedPod, Point } from './habitatLayout'
 import type { LiveResource } from './useClusterSnapshot'
 import { storageFacts } from './habitatView'
+import { patrolPose, servicePatrol } from './serviceGuide'
 
 type Props = {
   layout: HabitatLayout
@@ -43,6 +44,149 @@ function Connector({ from, to, tint }: { from: Point; to: Point; tint: string })
 
 const networkKinds = new Set(['Service', 'EndpointSlice', 'Ingress', 'NetworkPolicy'])
 
+function ServiceGuide({
+  resource,
+  props,
+  highlighted,
+}: {
+  resource: LiveResource
+  props: Props
+  highlighted: boolean
+}) {
+  const guide = useRef<Group>(null)
+  const leftArm = useRef<Group>(null),
+    rightArm = useRef<Group>(null)
+  const leftLeg = useRef<Group>(null),
+    rightLeg = useRef<Group>(null)
+  const distance = useRef(0)
+  const route = useMemo(() => servicePatrol(props.layout, resource.id), [props.layout, resource.id])
+  const routeKey = route.points.map((p) => p.join(':')).join('|')
+  const observed = props.fresh(resource)
+  const destinationsFresh =
+    props.endpointsFresh &&
+    props.layout.resources
+      .filter(
+        (r) =>
+          r.kind === 'EndpointSlice' &&
+          r.namespace === resource.namespace &&
+          r.links?.some((l) => l.kind === 'Service' && l.name === resource.name),
+      )
+      .every(props.fresh)
+  const walking = props.motion && observed && destinationsFresh && route.roomIds.length > 0
+  const tint = observed ? '#79aaf0' : '#8594a6'
+  const opacity = highlighted ? 1 : 0.38
+  const destinations = new Set(
+    props.layout.edges
+      .filter(
+        (e) => e.from === resource.id && props.layout.pods.some((p) => p.resource.id === e.to),
+      )
+      .map((e) => e.to),
+  ).size
+  useEffect(() => {
+    distance.current = 0
+    const pose = patrolPose(route.points, 0)
+    guide.current?.position.set(...pose.position)
+    if (guide.current) guide.current.rotation.y = pose.yaw
+  }, [routeKey])
+  useFrame((_, delta) => {
+    if (!walking || !guide.current) return
+    distance.current += Math.min(delta, 0.1) * 0.65
+    const pose = patrolPose(route.points, distance.current)
+    guide.current.position.set(...pose.position)
+    guide.current.rotation.y = pose.yaw
+    const stride = Math.sin(distance.current * 9) * 0.4
+    if (leftArm.current) leftArm.current.rotation.x = stride
+    if (rightArm.current) rightArm.current.rotation.x = -stride
+    if (leftLeg.current) leftLeg.current.rotation.x = -stride
+    if (rightLeg.current) rightLeg.current.rotation.x = stride
+  })
+  const choose = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    props.onSelect(resource.id)
+  }
+  const uniform = (
+    <meshStandardMaterial color={tint} transparent opacity={opacity} roughness={0.58} />
+  )
+  return (
+    <>
+      <mesh position={route.points[0]} rotation={[-Math.PI / 2, 0, 0]} onClick={choose}>
+        <ringGeometry args={[0.22, 0.28, 24]} />
+        <meshBasicMaterial color={tint} transparent opacity={opacity} />
+      </mesh>
+      <group ref={guide} position={route.points[0]} onClick={choose}>
+        <mesh position={[0, 0.8, 0]}>
+          <capsuleGeometry args={[0.19, 0.24, 4, 12]} />
+          {uniform}
+        </mesh>
+        <mesh position={[0, 1.2, 0]}>
+          <sphereGeometry args={[0.17, 16, 12]} />
+          <meshStandardMaterial
+            color={observed ? '#e2bf9c' : '#9ca3aa'}
+            transparent
+            opacity={opacity}
+          />
+        </mesh>
+        <mesh position={[0, 1.32, 0]}>
+          <sphereGeometry args={[0.18, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          {uniform}
+        </mesh>
+        <mesh position={[0, 1.32, 0.13]}>
+          <boxGeometry args={[0.28, 0.035, 0.16]} />
+          {uniform}
+        </mesh>
+        {[-0.057, 0.057].map((x) => (
+          <mesh key={x} position={[x, 1.21, 0.153]}>
+            <sphereGeometry args={[0.023, 8, 8]} />
+            <meshBasicMaterial color="#243a51" transparent opacity={opacity} />
+          </mesh>
+        ))}
+        <mesh position={[-0.08, 0.86, 0.184]}>
+          <circleGeometry args={[0.052, 6]} />
+          <meshBasicMaterial color="#f1d18c" transparent opacity={opacity} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <group
+            key={`arm${side}`}
+            ref={side < 0 ? leftArm : rightArm}
+            position={[side * 0.25, 0.96, 0]}
+          >
+            <mesh position={[0, -0.18, 0]}>
+              <capsuleGeometry args={[0.066, 0.26, 4, 8]} />
+              {uniform}
+            </mesh>
+            <mesh position={[0, -0.36, 0]}>
+              <sphereGeometry args={[0.07, 8, 8]} />
+              <meshStandardMaterial color="#e2bf9c" transparent opacity={opacity} />
+            </mesh>
+          </group>
+        ))}
+        {[-1, 1].map((side) => (
+          <group
+            key={`leg${side}`}
+            ref={side < 0 ? leftLeg : rightLeg}
+            position={[side * 0.105, 0.55, 0]}
+          >
+            <mesh position={[0, -0.21, 0]}>
+              <capsuleGeometry args={[0.073, 0.29, 4, 8]} />
+              <meshStandardMaterial color="#28465f" transparent opacity={opacity} />
+            </mesh>
+            <mesh position={[0, -0.42, 0.055]}>
+              <boxGeometry args={[0.14, 0.1, 0.23]} />
+              <meshStandardMaterial color="#182d43" transparent opacity={opacity} />
+            </mesh>
+          </group>
+        ))}
+        <Label
+          text={`SERVICE · ${resource.name}\n${observed && destinationsFresh ? `${destinations} pod destinations · routing guide` : 'Destination freshness unknown'}`}
+          position={[0, 1.75, 0]}
+          width={2.9}
+          onClick={choose}
+        />
+      </group>
+    </>
+  )
+}
+
 function Infrastructure({
   resource,
   position,
@@ -54,9 +198,10 @@ function Infrastructure({
   props: Props
   highlighted: boolean
 }) {
+  if (resource.kind === 'Service')
+    return <ServiceGuide resource={resource} props={props} highlighted={highlighted} />
   const storage = !networkKinds.has(resource.kind)
-  if (storage ? !props.layers.storage : resource.kind !== 'Service' && !props.layers.network)
-    return null
+  if (storage ? !props.layers.storage : !props.layers.network) return null
   const tint = !props.fresh(resource)
     ? '#8594a6'
     : resource.kind === 'NetworkPolicy'
@@ -71,9 +216,7 @@ function Infrastructure({
   return (
     <group position={position}>
       <mesh onClick={choose}>
-        {resource.kind === 'Service' ? (
-          <cylinderGeometry args={[0.42, 0.5, 0.28, 6]} />
-        ) : resource.kind === 'Volume' ? (
+        {resource.kind === 'Volume' ? (
           <cylinderGeometry args={[0.17, 0.17, 0.22, 16]} />
         ) : ['StorageClass', 'ResourceQuota'].includes(resource.kind) ? (
           <boxGeometry args={[0.7, 0.8, 0.18]} />
@@ -93,33 +236,6 @@ function Infrastructure({
           metalness={0.35}
         />
       </mesh>
-      {resource.kind === 'Service' && (
-        <>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.28, 0]} onClick={choose}>
-            <torusGeometry args={[0.36, 0.035, 8, 24]} />
-            <meshBasicMaterial color={tint} />
-          </mesh>
-          <Label
-            text={`SERVICE · ${resource.name}\n${
-              props.endpointsFresh &&
-              props.fresh(resource) &&
-              props.layout.resources
-                .filter(
-                  (r) =>
-                    r.kind === 'EndpointSlice' &&
-                    r.namespace === resource.namespace &&
-                    r.links?.some((l) => l.kind === 'Service' && l.name === resource.name),
-                )
-                .every(props.fresh)
-                ? `Pod destinations: ${new Set(props.layout.edges.filter((edge) => edge.from === resource.id && props.layout.resources.find((r) => r.id === edge.to)?.kind === 'Pod').map((edge) => edge.to)).size}`
-                : 'Destination freshness unknown'
-            }`}
-            position={[0, 1, 0]}
-            width={3.1}
-            onClick={choose}
-          />
-        </>
-      )}
       {storage &&
         ['Volume', 'PersistentVolumeClaim', 'PersistentVolume'].includes(resource.kind) &&
         (() => {
@@ -142,7 +258,6 @@ function Infrastructure({
         />
       )}
       {props.selected === resource.id &&
-        resource.kind !== 'Service' &&
         ![
           'Volume',
           'PersistentVolumeClaim',
@@ -257,7 +372,12 @@ function CameraRig({
     : selected
       ? [...sceneHighlights(layout, selected, [])]
       : matching
-  const points = focusIds.map((id) => layout.positions.get(id)).filter((p): p is Point => !!p)
+  const points = [
+    ...focusIds.map((id) => layout.positions.get(id)).filter((p): p is Point => !!p),
+    ...layout.resources
+      .filter((r) => r.kind === 'Service' && focusIds.includes(r.id))
+      .flatMap((r) => servicePatrol(layout, r.id).points),
+  ]
   const overview = !selected && (overviewRequested ?? matching.length === layout.resources.length)
   const center: Point =
     overview || !points.length

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { buildHabitatLayout, sceneHighlights } from '../src/habitatLayout.ts'
 import { podStorage, sceneObjectIds, storageFacts } from '../src/habitatView.ts'
+import { servicePatrol } from '../src/serviceGuide.ts'
 
 function resource(kind, id, fields = {}) {
   return {
@@ -21,6 +22,67 @@ const pod = (name, nodeName, namespace = 'shop') =>
   resource('Pod', `Pod:${name}`, { name, nodeName, namespace })
 const container = (parent, name = 'app') =>
   resource('Container', `${parent}/app/${name}`, { name, parent, namespace: 'shop' })
+
+test('a Service guide follows endpoint pods across nodes without patrolling unrelated nodes', () => {
+  const a = pod('first', 'a'),
+    b = pod('second', 'b'),
+    unrelated = pod('unrelated', 'c')
+  const service = resource('Service', 'service', { name: 'checkout', namespace: 'shop' })
+  const slice = resource('EndpointSlice', 'slice', {
+    namespace: 'shop',
+    links: [
+      { kind: 'Service', name: service.name, namespace: 'shop', relation: 'service' },
+      { kind: 'Pod', uid: a.uid, relation: 'endpoint' },
+      { kind: 'Pod', uid: b.uid, relation: 'endpoint' },
+    ],
+  })
+  const layout = buildHabitatLayout([
+    node('a'),
+    node('b'),
+    node('c'),
+    a,
+    b,
+    unrelated,
+    service,
+    slice,
+  ])
+  const route = servicePatrol(layout, service.id)
+  assert.deepEqual(route.roomIds, ['Node:a', 'Node:b'])
+  for (const room of layout.rooms.filter((r) => route.roomIds.includes(r.resource.id))) {
+    assert.ok(
+      route.points.some(
+        (p) =>
+          Math.abs(p[0] - room.position[0]) < room.width / 2 &&
+          Math.abs(p[2] - room.position[2]) < room.depth / 2,
+      ),
+    )
+  }
+  assert.deepEqual(layout.positions.get(service.id), route.points[0])
+})
+
+test('a Service with external endpoints or replaced pod UIDs never invents a node patrol', () => {
+  const replacement = pod('same-name', 'a')
+  const service = resource('Service', 'service', { name: 'checkout', namespace: 'shop' })
+  const slice = resource('EndpointSlice', 'slice', {
+    namespace: 'shop',
+    links: [
+      { kind: 'Service', name: service.name, namespace: 'shop', relation: 'service' },
+      {
+        kind: 'Pod',
+        name: replacement.name,
+        uid: 'old-uid',
+        namespace: 'shop',
+        relation: 'endpoint',
+      },
+    ],
+  })
+  const route = servicePatrol(
+    buildHabitatLayout([node('a'), replacement, service, slice]),
+    service.id,
+  )
+  assert.deepEqual(route.roomIds, [])
+  assert.equal(route.points.length, 1)
+})
 
 test('empty observations generate no demo nodes, pods or containers', () => {
   const layout = buildHabitatLayout([])

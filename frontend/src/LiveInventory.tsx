@@ -411,7 +411,9 @@ export function LiveInventory() {
                       ? '◉'
                       : r.kind === 'Pod'
                         ? '⬡'
-                        : '□'}
+                        : r.kind === 'Service'
+                          ? '♟'
+                          : '□'}
                 </span>
                 <span>
                   <strong>{r.name}</strong>
@@ -598,8 +600,8 @@ export function LiveInventory() {
             not CPU or memory capacity. Healthy motion requires fresh Pod Ready observations.
           </p>
           <p className="scope-note scene-note">
-            Services are labeled gateways. Blue links show their configured pod destinations, not
-            measured traffic. Reveal storage or advanced networking when you need them.
+            Services are walking routing guides. Their patrol is ambient animation, not measured
+            traffic or security enforcement. Blue links show configured pod destinations.
           </p>
           {layers.network && (
             <section className="network-check" aria-label="Pod network policy check">
@@ -816,8 +818,9 @@ export function LiveInventory() {
                 <section className="relationship-list">
                   <h4>Configured pod destinations</h4>
                   <p className="scope-note">
-                    This gateway gives its pods a stable entry point. Destinations come from
-                    EndpointSlices; this does not prove application traffic.
+                    This walking guide represents a stable entry point for its pods. Walking is an
+                    ambient illustration, not measured traffic or security enforcement. Destinations
+                    come from EndpointSlices; this does not prove application traffic.
                   </p>
                   {layout.edges
                     .filter(

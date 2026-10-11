@@ -12,9 +12,14 @@ Removing an object removes its identity; it does not invent a crash history.
 ![Focused exploration: overview, namespace, pod, then its attachments](assets/focused-exploration.svg)
 
 The default house shows nodes, namespace boundaries, pods and Services. Each Service is a labelled
-gateway with its configured pod destinations. EndpointSlices supply those relationships in the
-background; they do not need to occupy the default scene. Advanced networking, storage and resource
-layers start hidden. Hiding a layer changes presentation, not discovery or the observed inventory.
+human routing guide with its configured pod destinations. One guide patrols the rooms containing its
+observed endpoint pods, including multiple node rooms when necessary. A Service without observed pod
+destinations stays at its marker. The walking is ambient illustration, not traffic telemetry,
+readiness or security enforcement. It pauses with the motion control, system reduced motion or stale
+Service/endpoint discovery. Clicking the figure opens its Service inspector. EndpointSlices supply
+those relationships in the background; they do not need to occupy the default scene. Advanced
+networking, storage and resource layers start hidden. Hiding a layer changes presentation, not
+discovery or the observed inventory.
 
 1. Select a namespace to scope its pods and Services across their real node assignments.
 2. Select a pod to inspect its containers and existing volume attachments.
@@ -41,6 +46,11 @@ claim for each pod. Inspect the actual attachment rather than assuming shared st
 [persistent volume model](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) and
 [StatefulSet storage behavior](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/).
 Selection is read-only: it never changes a mount, claim, pod or cluster configuration.
+
+![Implemented human Service guide in the local Kubernetes lab](assets/service-guide-preview.png)
+
+The screenshot above is the implemented live lab view with the shared Service selected. The figure
+is an interaction metaphor for routing, not an extra Kubernetes workload or a node security agent.
 
 ## Coverage
 
