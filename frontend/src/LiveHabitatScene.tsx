@@ -1,7 +1,16 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CanvasTexture, Group, Quaternion, Vector3, InstancedMesh, Object3D, Color } from 'three'
+import {
+  CanvasTexture,
+  Group,
+  Quaternion,
+  Vector3,
+  InstancedMesh,
+  Object3D,
+  Color,
+  SRGBColorSpace,
+} from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { namespaceColor, sceneHighlights } from './habitatLayout'
 import type { PlacedPod, Point } from './habitatLayout'
@@ -9,8 +18,12 @@ import type { LiveResource } from './useClusterSnapshot'
 import { storageFacts } from './habitatView'
 import { patrolPose, podServices, serviceColor, servicePatrol } from './serviceGuide'
 import type { ScaleLayout, Summary, GroupPlacement } from './scaleModel'
+import { ThemeContext, themes, useTheme } from './themes'
+import type { ThemeId } from './themes'
+import { ClusterStructure, PodShell, SoftBox } from './ThemeGeometry'
 
 type Props = {
+  theme?: ThemeId
   layout: ScaleLayout
   summaries: Map<string, Summary>
   nodeSummaries: Map<string, Summary>
@@ -111,6 +124,7 @@ function ServiceGuide({
   const uniform = (
     <meshStandardMaterial color={tint} transparent opacity={opacity} roughness={0.58} />
   )
+  const theme = props.theme ?? 'midnight'
   return (
     <>
       <mesh position={route.points[0]} rotation={[-Math.PI / 2, 0, 0]} onClick={choose}>
@@ -119,21 +133,61 @@ function ServiceGuide({
       </mesh>
       <group ref={guide} position={route.points[0]} onClick={choose}>
         <mesh position={[0, 0.8, 0]}>
-          <capsuleGeometry args={[0.19, 0.24, 4, 12]} />
+          {theme === 'blueprint' ? (
+            <boxGeometry args={[0.38, 0.48, 0.3]} />
+          ) : (
+            <capsuleGeometry args={[0.19, 0.24, 4, 12]} />
+          )}
           {uniform}
         </mesh>
         <mesh position={[0, 1.2, 0]}>
-          <sphereGeometry args={[0.17, 16, 12]} />
+          {theme === 'blueprint' ? (
+            <boxGeometry args={[0.33, 0.28, 0.28]} />
+          ) : (
+            <sphereGeometry args={[0.17, 16, 12]} />
+          )}
           <meshStandardMaterial
-            color={observed ? '#e2bf9c' : '#9ca3aa'}
+            color={observed ? (theme === 'blueprint' ? '#dbe8f4' : '#e2bf9c') : '#9ca3aa'}
             transparent
             opacity={opacity}
           />
         </mesh>
         <mesh position={[0, 1.32, 0]}>
-          <sphereGeometry args={[0.18, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          {theme === 'blueprint' ? (
+            <boxGeometry args={[0.36, 0.06, 0.3]} />
+          ) : (
+            <sphereGeometry args={[0.18, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          )}
           {uniform}
         </mesh>
+        {theme === 'garden' && (
+          <>
+            <mesh position={[0, 1.3, 0]}>
+              <cylinderGeometry args={[0.29, 0.29, 0.035, 20]} />
+              {uniform}
+            </mesh>
+            <mesh position={[0, 0.84, -0.21]}>
+              <SoftBox size={[0.28, 0.32, 0.16]} />
+              <meshStandardMaterial color="#b08c56" transparent opacity={opacity} />
+            </mesh>
+          </>
+        )}
+        {theme === 'blueprint' && (
+          <>
+            <mesh position={[0, 1.52, 0]}>
+              <cylinderGeometry args={[0.014, 0.014, 0.25, 6]} />
+              {uniform}
+            </mesh>
+            <mesh position={[0, 1.67, 0]}>
+              <octahedronGeometry args={[0.06]} />
+              {uniform}
+            </mesh>
+            <mesh position={[0, 1.2, 0.145]}>
+              <boxGeometry args={[0.22, 0.055, 0.015]} />
+              <meshBasicMaterial color={tint} />
+            </mesh>
+          </>
+        )}
         <mesh position={[0, 1.32, 0.13]}>
           <boxGeometry args={[0.28, 0.035, 0.16]} />
           {uniform}
@@ -155,7 +209,11 @@ function ServiceGuide({
             position={[side * 0.25, 0.96, 0]}
           >
             <mesh position={[0, -0.18, 0]}>
-              <capsuleGeometry args={[0.066, 0.26, 4, 8]} />
+              {theme === 'blueprint' ? (
+                <boxGeometry args={[0.11, 0.36, 0.12]} />
+              ) : (
+                <capsuleGeometry args={[0.066, 0.26, 4, 8]} />
+              )}
               {uniform}
             </mesh>
             <mesh position={[0, -0.36, 0]}>
@@ -171,7 +229,11 @@ function ServiceGuide({
             position={[side * 0.105, 0.55, 0]}
           >
             <mesh position={[0, -0.21, 0]}>
-              <capsuleGeometry args={[0.073, 0.29, 4, 8]} />
+              {theme === 'blueprint' ? (
+                <boxGeometry args={[0.12, 0.4, 0.13]} />
+              ) : (
+                <capsuleGeometry args={[0.073, 0.29, 4, 8]} />
+              )}
               <meshStandardMaterial color={tint} transparent opacity={opacity} roughness={0.9} />
             </mesh>
             <mesh position={[0, -0.42, 0.055]}>
@@ -206,13 +268,18 @@ function Infrastructure({
     return <ServiceGuide resource={resource} props={props} highlighted={highlighted} />
   const storage = !networkKinds.has(resource.kind)
   if (storage ? !props.layers.storage : !props.layers.network) return null
+  const theme = props.theme ?? 'midnight'
   const tint = !props.fresh(resource)
-    ? '#8594a6'
+    ? themes[theme].unknown
     : resource.kind === 'NetworkPolicy'
       ? '#c1a4ed'
       : storage
-        ? '#e4be77'
-        : '#79aaf0'
+        ? theme === 'midnight'
+          ? '#e4be77'
+          : '#b37d35'
+        : theme === 'midnight'
+          ? '#79aaf0'
+          : '#397da9'
   const choose = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     props.onSelect(resource.id)
@@ -220,7 +287,26 @@ function Infrastructure({
   return (
     <group position={position}>
       <mesh onClick={choose}>
-        {resource.kind === 'Volume' ? (
+        {theme === 'garden' ? (
+          storage ? (
+            <capsuleGeometry
+              args={[
+                resource.kind === 'Volume' ? 0.17 : 0.36,
+                resource.kind === 'Volume' ? 0.1 : 0.35,
+                4,
+                12,
+              ]}
+            />
+          ) : (
+            <sphereGeometry args={[0.46, 16, 12]} />
+          )
+        ) : theme === 'blueprint' ? (
+          storage ? (
+            <boxGeometry args={resource.kind === 'Volume' ? [0.35, 0.3, 0.35] : [0.7, 0.7, 0.55]} />
+          ) : (
+            <cylinderGeometry args={[0.45, 0.45, 0.65, 6]} />
+          )
+        ) : resource.kind === 'Volume' ? (
           <cylinderGeometry args={[0.17, 0.17, 0.22, 16]} />
         ) : ['StorageClass', 'ResourceQuota'].includes(resource.kind) ? (
           <boxGeometry args={[0.7, 0.8, 0.18]} />
@@ -275,15 +361,16 @@ function Infrastructure({
   )
 }
 
-function color(resource: LiveResource, fresh: boolean) {
-  if (!fresh || resource.state === 'Unknown') return '#8594a6'
-  if (resource.state === 'Failed') return '#ee7979'
+function color(resource: LiveResource, fresh: boolean, theme: ThemeId = 'midnight') {
+  const palette = themes[theme]
+  if (!fresh || resource.state === 'Unknown') return palette.unknown
+  if (resource.state === 'Failed') return palette.danger
   if (resource.state === 'Terminated' && resource.exitCode !== undefined && resource.exitCode !== 0)
-    return '#ee7979'
-  if (['Completed', 'Succeeded', 'Terminated'].includes(resource.state)) return '#8cafdf'
+    return palette.danger
+  if (['Completed', 'Succeeded', 'Terminated'].includes(resource.state)) return palette.complete
   if (resource.ready === false || ['NotReady', 'Waiting', 'Unscheduled'].includes(resource.state))
-    return '#f2b65e'
-  return resource.ready === true ? '#73dfcf' : '#8cafdf'
+    return palette.warning
+  return resource.ready === true ? palette.ready : palette.complete
 }
 
 function Label({
@@ -297,23 +384,26 @@ function Label({
   width?: number
   onClick?: (event: ThreeEvent<MouseEvent>) => void
 }) {
+  const { theme } = useTheme()
   const texture = useMemo(() => {
     const canvas = document.createElement('canvas')
     const lines = text.split('\n')
     canvas.width = 768
     canvas.height = lines.length === 1 ? 96 : lines.length * 54 + 24
     const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = '#102134e8'
+    ctx.fillStyle = themes[theme].label
     ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.font = '500 29px system-ui'
-    ctx.fillStyle = '#deebf4'
+    ctx.font = theme === 'blueprint' ? '600 27px monospace' : '500 29px system-ui'
+    ctx.fillStyle = themes[theme].ink
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     lines.forEach((line, index) =>
       ctx.fillText(line, 384, lines.length === 1 ? 48 : 39 + index * 54, 730),
     )
-    return new CanvasTexture(canvas)
-  }, [text])
+    const result = new CanvasTexture(canvas)
+    result.colorSpace = SRGBColorSpace
+    return result
+  }, [text, theme])
   useEffect(() => () => texture.dispose(), [texture])
   return (
     <sprite
@@ -321,7 +411,7 @@ function Label({
       scale={[width, (width * texture.image.height) / texture.image.width, 1]}
       onClick={onClick}
     >
-      <spriteMaterial map={texture} depthTest={false} transparent />
+      <spriteMaterial map={texture} depthTest={false} transparent toneMapped={false} />
     </sprite>
   )
 }
@@ -493,7 +583,8 @@ function Pod({
     )
     props.onSelect(inner ? String(inner.object.userData.resourceId) : resource.id)
   }
-  const tint = color(resource, props.fresh(resource))
+  const theme = props.theme ?? 'midnight'
+  const tint = color(resource, props.fresh(resource), theme)
   const services = podServices(props.layout, resource.id)
   const ns = props.layout.resources.find(
     (r) => r.kind === 'Namespace' && r.name === resource.namespace,
@@ -502,7 +593,7 @@ function Pod({
     <>
       <mesh position={[pod.position[0], pod.position[1] / 2, pod.position[2]]}>
         <cylinderGeometry args={[0.013, 0.013, pod.position[1] - 0.1, 6]} />
-        <meshStandardMaterial color="#354e65" />
+        <meshStandardMaterial color={theme === 'midnight' ? '#354e65' : themes[theme].frame} />
       </mesh>
       <mesh
         position={[pod.position[0], 0.12, pod.position[2]]}
@@ -533,17 +624,13 @@ function Pod({
             />
           </mesh>
         ))}
-        <mesh onClick={choosePod}>
-          <icosahedronGeometry args={[pod.radius, 1]} />
-          <meshStandardMaterial
-            color={tint}
-            wireframe
-            transparent
-            opacity={highlighted.has(resource.id) ? 1 : 0.25}
-            emissive={tint}
-            emissiveIntensity={highlighted.has(resource.id) ? 0.2 : 0}
-          />
-        </mesh>
+        <PodShell
+          theme={theme}
+          radius={pod.radius}
+          tint={tint}
+          opacity={highlighted.has(resource.id) ? 1 : 0.25}
+          onClick={choosePod}
+        />
         {pod.containers.map((c) => (
           <mesh
             key={c.resource.id}
@@ -554,12 +641,27 @@ function Pod({
             }}
             userData={{ resourceId: c.resource.id }}
           >
-            <boxGeometry
-              args={pod.containers.length === 1 ? [0.58, 0.58, 0.58] : [0.37, 0.45, 0.37]}
-            />
+            {theme === 'garden' ? (
+              <SoftBox
+                size={pod.containers.length === 1 ? [0.58, 0.58, 0.58] : [0.37, 0.45, 0.37]}
+              />
+            ) : theme === 'blueprint' ? (
+              <cylinderGeometry
+                args={[
+                  pod.containers.length === 1 ? 0.32 : 0.21,
+                  pod.containers.length === 1 ? 0.32 : 0.21,
+                  0.48,
+                  6,
+                ]}
+              />
+            ) : (
+              <boxGeometry
+                args={pod.containers.length === 1 ? [0.58, 0.58, 0.58] : [0.37, 0.45, 0.37]}
+              />
+            )}
             <meshStandardMaterial
-              color={color(c.resource, props.fresh(c.resource))}
-              emissive={color(c.resource, props.fresh(c.resource))}
+              color={color(c.resource, props.fresh(c.resource), theme)}
+              emissive={color(c.resource, props.fresh(c.resource), theme)}
               emissiveIntensity={highlighted.has(c.resource.id) ? 0.3 : 0}
               transparent
               opacity={highlighted.has(c.resource.id) || highlighted.has(resource.id) ? 1 : 0.35}
@@ -578,6 +680,8 @@ function Pod({
 }
 
 function GroupedWorkloads({ props }: { props: Props }) {
+  const theme = props.theme ?? 'midnight'
+  const palette = themes[theme]
   const mesh = useRef<InstancedMesh>(null)
   const [near, setNear] = useState<string | null>(null)
   const elapsed = useRef(0)
@@ -597,7 +701,9 @@ function GroupedWorkloads({ props }: { props: Props }) {
       object.updateMatrix()
       mesh.current!.setMatrixAt(index, object.matrix)
       const summary = props.summaries.get(entry.group.id)!
-      const tint = new Color(summary.warning ? '#e4be77' : summary.unknown ? '#8594a6' : '#73dfcf')
+      const tint = new Color(
+        summary.warning ? palette.warning : summary.unknown ? palette.unknown : palette.ready,
+      )
       if (!entry.group.pods.some((pod) => active.has(pod.id))) tint.multiplyScalar(0.25)
       mesh.current!.setColorAt(index, tint)
     })
@@ -605,7 +711,7 @@ function GroupedWorkloads({ props }: { props: Props }) {
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
     mesh.current.computeBoundingSphere()
     invalidate()
-  }, [groups, props.summaries, invalidate])
+  }, [groups, props.summaries, invalidate, theme])
   useFrame(({ camera }, delta) => {
     if (mesh.current && props.motion) {
       phase.current += Math.min(delta, 0.1)
@@ -642,7 +748,7 @@ function GroupedWorkloads({ props }: { props: Props }) {
   return (
     <>
       <instancedMesh
-        key={groups.length}
+        key={`${groups.length}:${theme}`}
         ref={mesh}
         args={[undefined, undefined, groups.length]}
         onClick={(event) => {
@@ -651,8 +757,19 @@ function GroupedWorkloads({ props }: { props: Props }) {
           if (entry) props.onSelect(entry.group.id)
         }}
       >
-        <icosahedronGeometry args={[1, 0]} />
-        <meshStandardMaterial wireframe roughness={0.6} />
+        {theme === 'garden' ? (
+          <dodecahedronGeometry args={[1, 0]} />
+        ) : theme === 'blueprint' ? (
+          <octahedronGeometry args={[1, 0]} />
+        ) : (
+          <icosahedronGeometry args={[1, 0]} />
+        )}
+        <meshStandardMaterial
+          wireframe={theme !== 'garden'}
+          roughness={0.6}
+          transparent={theme === 'garden'}
+          opacity={theme === 'garden' ? 0.6 : 1}
+        />
       </instancedMesh>
       {labels.map((entry) => {
         const value = props.summaries.get(entry.group.id)!
@@ -675,6 +792,7 @@ function GroupedWorkloads({ props }: { props: Props }) {
 }
 
 function GroupPreview({ entry, props }: { entry: GroupPlacement; props: Props }) {
+  const theme = props.theme ?? 'midnight'
   const pods = entry.group.pods.slice(0, 24)
   const mesh = useRef<InstancedMesh>(null)
   useEffect(() => {
@@ -684,12 +802,12 @@ function GroupPreview({ entry, props }: { entry: GroupPlacement; props: Props })
       object.position.set(((index % 6) - 2.5) * 0.3, Math.floor(index / 6) * 0.3, 0)
       object.updateMatrix()
       mesh.current!.setMatrixAt(index, object.matrix)
-      mesh.current!.setColorAt(index, new Color(color(pod, props.fresh(pod))))
+      mesh.current!.setColorAt(index, new Color(color(pod, props.fresh(pod), theme)))
     })
     mesh.current.instanceMatrix.needsUpdate = true
     if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
     mesh.current.computeBoundingSphere()
-  }, [entry.group, props.fresh])
+  }, [entry.group, props.fresh, theme])
   return (
     <group position={[entry.position[0], entry.position[1], entry.position[2] + 1]}>
       <instancedMesh
@@ -701,7 +819,13 @@ function GroupPreview({ entry, props }: { entry: GroupPlacement; props: Props })
           if (pod) props.onSelect(pod.id)
         }}
       >
-        <icosahedronGeometry args={[0.12, 0]} />
+        {theme === 'garden' ? (
+          <sphereGeometry args={[0.12, 10, 8]} />
+        ) : theme === 'blueprint' ? (
+          <cylinderGeometry args={[0.12, 0.12, 0.2, 6]} />
+        ) : (
+          <icosahedronGeometry args={[0.12, 0]} />
+        )}
         <meshStandardMaterial />
       </instancedMesh>
       <Label
@@ -726,42 +850,11 @@ function House(props: Props) {
   const width = layout.width + 0.7
   const depth = layout.depth + 0.7
   const height = Math.max(3.1, ...layout.pods.map((p) => p.position[1] + p.radius + 0.8))
-  const roofRise = Math.min(2, width * 0.16)
-  const roofLength = Math.hypot(width / 2, roofRise)
+  const theme = props.theme ?? 'midnight'
+  const palette = themes[theme]
   return (
     <group>
-      <Box position={[0, -0.13, 0]} size={[width + 0.4, 0.3, depth + 0.4]} tint="#142639" />
-      <Box
-        position={[0, height / 2, -depth / 2]}
-        size={[width, height, 0.06]}
-        tint="#51809b"
-        opacity={0.12}
-      />
-      {[-width / 2, width / 2].flatMap((x) =>
-        [-depth / 2, depth / 2].map((z) => (
-          <Box
-            key={`${x}:${z}`}
-            position={[x, height / 2, z]}
-            size={[0.08, height, 0.08]}
-            tint="#6486a1"
-          />
-        )),
-      )}
-      {[-depth / 2, depth / 2].map((z) => (
-        <group key={z}>
-          {[-1, 1].map((side) => (
-            <mesh
-              key={side}
-              position={[(side * width) / 4, height + roofRise / 2, z]}
-              rotation={[0, 0, -side * Math.atan2(roofRise, width / 2)]}
-            >
-              <boxGeometry args={[roofLength, 0.07, 0.07]} />
-              <meshStandardMaterial color="#7494ad" />
-            </mesh>
-          ))}
-        </group>
-      ))}
-      <Box position={[0, height + roofRise, 0]} size={[0.07, 0.07, depth]} tint="#7494ad" />
+      <ClusterStructure theme={theme} width={width} depth={depth} height={height} />
       {layout.rooms.map((room) => (
         <group key={room.resource.id} position={room.position}>
           <mesh
@@ -771,22 +864,26 @@ function House(props: Props) {
               props.onSelect(room.resource.id)
             }}
           >
-            <boxGeometry args={[room.width, 0.08, room.depth]} />
+            {theme === 'garden' ? (
+              <SoftBox size={[room.width, 0.08, room.depth]} radius={0.04} />
+            ) : (
+              <boxGeometry args={[room.width, 0.08, room.depth]} />
+            )}
             <meshStandardMaterial
-              color={ids.has(room.resource.id) ? '#214b5d' : '#192c40'}
+              color={ids.has(room.resource.id) ? palette.activeRoom : palette.room}
               roughness={0.7}
             />
           </mesh>
           <Box
             position={[room.width / 2, 0.65, 0]}
             size={[0.045, 1.3, room.depth]}
-            tint="#56809b"
+            tint={theme === 'midnight' ? '#56809b' : palette.frame}
             opacity={0.22}
           />
           <Box
             position={[0, 0.65, -room.depth / 2]}
             size={[room.width, 1.3, 0.045]}
-            tint="#56809b"
+            tint={theme === 'midnight' ? '#56809b' : palette.frame}
             opacity={0.22}
           />
           <Label
@@ -940,7 +1037,7 @@ function House(props: Props) {
           }}
         >
           <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color={color(c.resource, props.fresh(c.resource))} />
+          <meshStandardMaterial color={color(c.resource, props.fresh(c.resource), theme)} />
         </mesh>
       ))}
     </group>
@@ -948,6 +1045,8 @@ function House(props: Props) {
 }
 
 export function LiveHabitatScene(props: Props) {
+  const themeState = useTheme()
+  const palette = themes[themeState.theme]
   const { layout } = props
   const scale = Math.max(layout.width, layout.depth, 12)
   return (
@@ -961,16 +1060,22 @@ export function LiveHabitatScene(props: Props) {
       }}
       aria-label={`Live Kubernetes house with ${layout.rooms.length} node rooms, ${layout.totalPods} observed pods and ${layout.totalContainers} containers; ${layout.groups.length} collapsed workload groups and ${layout.pods.length} individual pods shown`}
     >
-      <color attach="background" args={['#0d1726']} />
-      <ambientLight intensity={1.5} />
-      <directionalLight position={[5, 12, 8]} intensity={2.5} />
-      <pointLight position={[-5, 5, 2]} color="#6adde0" intensity={22} />
-      <House {...props} />
-      <gridHelper
-        args={[scale * 4, Math.min(120, Math.ceil(scale * 4)), '#263c51', '#172638']}
-        position={[0, -0.3, 0]}
-      />
-      <CameraRig {...props} />
+      <ThemeContext.Provider value={themeState}>
+        <color attach="background" args={[palette.background]} />
+        <ambientLight intensity={1.5} />
+        <directionalLight position={[5, 12, 8]} intensity={2.5} />
+        <pointLight
+          position={[-5, 5, 2]}
+          color={themeState.theme === 'garden' ? '#fff1c8' : '#6adde0'}
+          intensity={themeState.theme === 'midnight' ? 22 : 9}
+        />
+        <House {...props} theme={themeState.theme} />
+        <gridHelper
+          args={[scale * 4, Math.min(120, Math.ceil(scale * 4)), palette.grid, palette.gridMinor]}
+          position={[0, -0.3, 0]}
+        />
+        <CameraRig {...props} />
+      </ThemeContext.Provider>
     </Canvas>
   )
 }

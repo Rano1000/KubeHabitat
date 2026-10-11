@@ -5,12 +5,14 @@ import { isWarning, kinds, resources } from './demo'
 import type { ResourceKind } from './demo'
 import { SceneBoundary } from './SceneBoundary'
 import { useBackendStatus } from './useBackendStatus'
+import { ThemeSelector, useTheme } from './themes'
 
 const HabitatScene = lazy(() =>
   import('./HabitatScene').then((module) => ({ default: module.HabitatScene })),
 )
 
 export function App() {
+  const { theme } = useTheme()
   const [view, setView] = useState(
     window.location.hash === '#docs'
       ? 'docs'
@@ -66,7 +68,7 @@ export function App() {
   }
 
   return (
-    <div className={`app ${paused || reducedMotion ? 'motion-paused' : ''}`}>
+    <div data-theme={theme} className={`app ${paused || reducedMotion ? 'motion-paused' : ''}`}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -101,6 +103,7 @@ export function App() {
             {paused ? 'Resume animations' : 'Pause animations'}
           </button>
         )}
+        <ThemeSelector />
         <span className="phase-label">PHASE 03 / LIVE HABITAT</span>
       </header>
       {view === 'demo' && (

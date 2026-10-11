@@ -1,4 +1,5 @@
 import progressiveExploration from '../../docs/assets/progressive-exploration.svg'
+import themeHabitats from '../../docs/assets/theme-habitats.svg'
 
 const phases = [
   [
@@ -75,6 +76,24 @@ export function Docs() {
         </p>
       </div>
       <div className="docs-grid">
+        <section className="doc-card wide">
+          <span className="eyebrow">THREE VISUAL WORLDS / ONE LIVE CLUSTER</span>
+          <h2>Choose your habitat.</h2>
+          <img
+            src={themeHabitats}
+            alt="Midnight's glowing house, Garden's glass conservatory and Blueprint's modular drafting studio"
+            style={{ width: '100%' }}
+          />
+          <p>
+            Use the Theme dropdown to choose Midnight Habitat, Garden Habitat or Blueprint Studio.
+            Panels, icons, cluster frames, pods, containers and Service guides change together. Your
+            selection and live Kubernetes observations stay intact.
+          </p>
+          <p>
+            The theme is remembered on this browser. Reduced motion, full-screen monitoring and
+            freshness rules work in all three themes.
+          </p>
+        </section>
         <section className="doc-card wide">
           <span className="eyebrow">PROGRESSIVE EXPLORATION / SCALE REVIEW</span>
           <h2>A clear overview. Detail when you need it.</h2>

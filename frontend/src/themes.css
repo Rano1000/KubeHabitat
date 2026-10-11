@@ -1,0 +1,369 @@
+.theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.theme-selector select {
+  max-width: 190px;
+  background: #162435;
+  color: #dbe6f4;
+  border: 1px solid #3c5268;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.theme-glyph {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+.scene-actions .theme-selector span {
+  display: none;
+}
+.app[data-theme='blueprint'] .signal-dot.ready {
+  background: #127a85;
+}
+.monitor-actions .theme-selector select {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.app-header {
+  flex-wrap: wrap;
+}
+
+:root[data-theme='garden'] {
+  background: #eff3e9;
+  color: #243f34;
+}
+:root[data-theme='blueprint'] {
+  background: #e9f1f9;
+  color: #183a59;
+}
+.app[data-theme='garden'] {
+  --muted: #536e61;
+  --line: #c8d9cb;
+  --teal: #167257;
+  --amber: #9b650e;
+  --surface: #fffcf3;
+  --surface-alt: #edf3e9;
+  --canvas: #e8eee6;
+  --ink: #243f34;
+  --accent-soft: #dcecdc;
+  background: linear-gradient(135deg, #f8f6e9, #eff5ec 65%);
+  color: var(--ink);
+}
+.app[data-theme='blueprint'] {
+  --muted: #45637e;
+  --line: #aebfd3;
+  --teal: #12648e;
+  --amber: #9b650e;
+  --surface: #f9fcff;
+  --surface-alt: #eaf1fa;
+  --canvas: #e9f2fb;
+  --ink: #183a59;
+  --accent-soft: #d7e7f7;
+  background:
+    linear-gradient(90deg, #dbe8f733 1px, transparent 1px),
+    linear-gradient(#dbe8f733 1px, transparent 1px), #edf4fb;
+  background-size: 24px 24px;
+  color: var(--ink);
+}
+.app[data-theme='blueprint'] h1,
+.app[data-theme='blueprint'] h2,
+.app[data-theme='blueprint'] h3,
+.app[data-theme='blueprint'] strong,
+.app[data-theme='blueprint'] .eyebrow {
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+}
+.app[data-theme='garden'] h1 {
+  font-size: clamp(28px, 3.2vw, 46px);
+  letter-spacing: -1.3px;
+}
+.app[data-theme='garden'] .brand img {
+  background: #fffdf6;
+  border-radius: 14px;
+}
+.app[data-theme='garden'] .workspace {
+  border-radius: 24px;
+  box-shadow: 0 16px 45px #294f3812;
+}
+.app[data-theme='garden'] .resource-item {
+  border-radius: 13px;
+  margin: 5px 0;
+}
+.app[data-theme='garden'] .subtle-button,
+.app[data-theme='garden'] select,
+.app[data-theme='garden'] .kind-filters button {
+  border-radius: 18px;
+}
+.app[data-theme='garden'] .doc-card,
+.app[data-theme='garden'] .connection-strip,
+.app[data-theme='garden'] .topology-summary > div,
+.app[data-theme='garden'] .storage-card {
+  border-radius: 20px;
+}
+.app[data-theme='garden'] .explorer-intro {
+  padding-top: 8px;
+}
+.app[data-theme='blueprint'] .app-header {
+  min-height: 84px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #376689;
+}
+.app[data-theme='blueprint'] .workspace {
+  border-radius: 3px;
+  border: 1px solid #7094b5;
+}
+.app[data-theme='blueprint'] .subtle-button,
+.app[data-theme='blueprint'] select,
+.app[data-theme='blueprint'] input,
+.app[data-theme='blueprint'] .doc-card,
+.app[data-theme='blueprint'] .resource-item,
+.app[data-theme='blueprint'] .connection-strip,
+.app[data-theme='blueprint'] .workload-item {
+  border-radius: 3px;
+}
+.app[data-theme='blueprint'] .scene-toolbar {
+  border-bottom: 2px solid #8babc8;
+}
+.app[data-theme='blueprint'] .resource-item {
+  border-bottom: 1px dashed #aebfd3;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* These shared light surfaces cover the existing observation and documentation panels. */
+.app:not([data-theme='midnight'])
+  :is(
+    .inventory,
+    .details,
+    .doc-card,
+    .visibility-cards article,
+    .workload-inspector,
+    .habitat-minimap,
+    .activity-panel,
+    .phase-card,
+    .usage-card,
+    .storage-card,
+    .connection-strip,
+    .demo-banner,
+    .topology-summary > div
+  ) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.app:not([data-theme='midnight'])
+  :is(
+    .workspace,
+    .scene-panel,
+    .monitor-toolbar,
+    .live-observation,
+    .live-explorer.monitoring-expanded
+  ) {
+  background: var(--canvas);
+  color: var(--ink);
+}
+.app:not([data-theme='midnight'])
+  :is(
+    select,
+    #application-scope,
+    input,
+    .subtle-button,
+    .workload-item,
+    .minimap-room,
+    .scope-chip,
+    .network-check,
+    .storage-scope,
+    .usage-values > div,
+    .condition-list > div,
+    .resource-values,
+    .setup-code,
+    pre,
+    code
+  ) {
+  background: var(--surface-alt);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.app:not([data-theme='midnight'])
+  :is(
+    .resource-item.selected,
+    .resource-item:hover,
+    .kind-filters button[aria-pressed='true'],
+    .subtle-button:hover,
+    .workload-item:hover,
+    .minimap-room:hover
+  ) {
+  background: var(--accent-soft);
+  color: var(--ink);
+  border-color: var(--teal);
+}
+.app:not([data-theme='midnight'])
+  :is(
+    .scene-hint,
+    .scene-label,
+    .scope-note,
+    .scene-note,
+    .reduced-motion-note,
+    .scale-note,
+    .habitat-breadcrumb,
+    .inventory-footer,
+    .details dd,
+    .phase-card p,
+    .scene-toolbar span,
+    .resource-item small,
+    .resource-item strong,
+    .monitor-title span,
+    .workload-item small,
+    .activity-panel small,
+    .group-summary,
+    .scene-legend span,
+    .docs-page p,
+    .setup-list p,
+    .docs-grid p,
+    .doc-card li,
+    .doc-card dd,
+    .network-inputs label,
+    .connection-strip > div,
+    .inspector-empty p,
+    .inspector-tip
+  ) {
+  color: var(--muted);
+}
+.app:not([data-theme='midnight'])
+  :is(
+    .live-scene-counts,
+    .details h3,
+    .condition-list strong,
+    .condition-list span,
+    .topology-summary strong,
+    .topology-summary span,
+    .usage-values strong,
+    .usage-values span,
+    .policy-verdict,
+    .relationship-list small,
+    .docs-page h1,
+    .doc-card h2,
+    .doc-card h3
+  ) {
+  color: var(--ink);
+}
+.app:not([data-theme='midnight'])
+  :is(.text-link, nav a[aria-current], nav a:hover, .expand-monitoring, .monitor-exit, .eyebrow) {
+  color: var(--teal);
+}
+.app:not([data-theme='midnight']) input::placeholder {
+  color: var(--muted);
+}
+.app:not([data-theme='midnight'])
+  :is(
+    .panel-heading,
+    .scene-footer,
+    .live-scene-counts,
+    .layer-controls,
+    .visibility-disclosure,
+    .identity-disclosure,
+    .relationship-list,
+    .condition-list,
+    .scale-toolbar,
+    .app-header,
+    .app-footer,
+    .monitor-toolbar
+  ) {
+  border-color: var(--line);
+}
+.app:not([data-theme='midnight']) .signal-dot.ready {
+  background: #16866a;
+  box-shadow: none;
+}
+.app:not([data-theme='midnight']) .signal-dot.warning {
+  background: #b77619;
+  box-shadow: none;
+}
+.app:not([data-theme='midnight']) .signal-dot.unknown {
+  background: #75818b;
+  box-shadow: none;
+}
+.app:not([data-theme='midnight']) .state-badge.ready {
+  background: #d8eee1;
+  color: #176349;
+}
+.app:not([data-theme='midnight']) .state-badge.warning {
+  background: #fae8bd;
+  color: #885508;
+}
+.app:not([data-theme='midnight']) .state-badge.unknown {
+  background: #e1e8ed;
+  color: #455866;
+}
+.app:not([data-theme='midnight']) .live-alert {
+  background: #fff1cf;
+  border-color: #d3b776;
+  color: #795518;
+}
+.app:not([data-theme='midnight']) .monitor-notice {
+  color: #795518;
+}
+.app:not([data-theme='midnight']) .theme-selector select {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.app:not([data-theme='midnight']) .monitoring-expanded .live-workspace {
+  border: 0;
+  border-radius: 0;
+}
+.app[data-theme='garden'] .monitoring-expanded :is(.inventory, .details) {
+  border-radius: 20px;
+}
+.app[data-theme='blueprint'] .monitoring-expanded :is(.inventory, .details) {
+  border-radius: 3px;
+  border: 2px solid #7094b5;
+}
+
+@media (min-width: 1101px) {
+  .app[data-theme='garden'] .live-explorer:not(.monitoring-expanded) .live-workspace {
+    grid-template-columns: 250px minmax(0, 1fr) 290px;
+  }
+  .app[data-theme='blueprint'] .live-explorer:not(.monitoring-expanded) .live-workspace {
+    grid-template-columns: 255px minmax(0, 1fr) 240px;
+  }
+  .app[data-theme='blueprint']
+    .live-explorer:not(.monitoring-expanded)
+    .live-workspace
+    > .inventory {
+    grid-column: 3;
+    grid-row: 1;
+    border-right: 0;
+    border-left: 1px solid var(--line);
+  }
+  .app[data-theme='blueprint']
+    .live-explorer:not(.monitoring-expanded)
+    .live-workspace
+    > .live-house-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .app[data-theme='blueprint'] .live-explorer:not(.monitoring-expanded) .live-workspace > .details {
+    grid-column: 1;
+    grid-row: 1;
+    border-left: 0;
+    border-right: 1px solid var(--line);
+  }
+}
+@media (max-width: 780px) {
+  .app-header .theme-selector {
+    margin-left: auto;
+  }
+  .app-header .theme-selector select {
+    max-width: 160px;
+  }
+  .monitor-actions .theme-selector span {
+    display: none;
+  }
+}

@@ -24,6 +24,7 @@ import {
 import { podServices, serviceColor } from './serviceGuide'
 import { SceneBoundary } from './SceneBoundary'
 import { useMonitoringView } from './useMonitoringView'
+import { ThemeSelector, ResourceGlyph } from './themes'
 import { policyCheck } from './networkPolicy'
 import {
   overviewKinds,
@@ -592,15 +593,7 @@ export function LiveInventory() {
                   className="resource-glyph"
                   style={r.kind === 'Service' ? { color: serviceColor(r) } : undefined}
                 >
-                  {r.kind === 'Node'
-                    ? '▣'
-                    : r.kind === 'Namespace'
-                      ? '◉'
-                      : r.kind === 'Pod'
-                        ? '⬡'
-                        : r.kind === 'Service'
-                          ? '♟'
-                          : '□'}
+                  <ResourceGlyph kind={r.kind} />
                 </span>
                 <span>
                   <strong>{r.name}</strong>
@@ -684,6 +677,7 @@ export function LiveInventory() {
                 </span>
               </div>
               <div className="monitor-actions">
+                <ThemeSelector label="Monitoring theme" />
                 <button
                   className="subtle-button"
                   aria-pressed={monitoring.panel === 'components'}
@@ -746,6 +740,7 @@ export function LiveInventory() {
               <span>{namespace === 'All' ? 'Entire cluster' : namespace} · observed objects</span>
             </div>
             <div className="scene-actions">
+              <ThemeSelector label="Scene theme" />
               <button
                 ref={monitoring.expandButton}
                 className="subtle-button expand-monitoring"

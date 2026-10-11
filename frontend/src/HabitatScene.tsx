@@ -2,6 +2,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { Group, Vector3 } from 'three'
+import { ThemeContext, themes, useTheme } from './themes'
+import { ClusterStructure, PodShell, SoftBox } from './ThemeGeometry'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { highlightedIds, pods, resources } from './demo'
 import type { Resource, ResourceKind } from './demo'
@@ -122,6 +124,8 @@ function Pod({
   motion: boolean
   onSelect: Props['onSelect']
 }) {
+  const { theme } = useTheme()
+  const palette = themes[theme]
   const group = useRef<Group>(null)
   const ready = resource.state === 'Ready'
   const container = resources.find((item) => item.parent === resource.id)!
@@ -150,19 +154,23 @@ function Pod({
         <meshStandardMaterial color="#446078" />
       </mesh>
       <group ref={group} position={resource.position}>
-        <mesh onClick={selectPod}>
-          <icosahedronGeometry args={[0.76, 1]} />
-          <meshStandardMaterial
-            color={highlighted ? '#66e4df' : '#415a76'}
-            wireframe
-            emissive={highlighted ? '#154c55' : '#08121f'}
-            emissiveIntensity={1.2}
-          />
-        </mesh>
+        <PodShell
+          theme={theme}
+          radius={0.76}
+          tint={highlighted ? palette.ready : palette.unknown}
+          opacity={highlighted ? 1 : 0.35}
+          onClick={selectPod}
+        />
         <mesh onClick={selectContainer} userData={{ resourceId: container.id }} castShadow>
-          <boxGeometry args={[0.59, 0.59, 0.59]} />
+          {theme === 'garden' ? (
+            <SoftBox size={[0.59, 0.59, 0.59]} />
+          ) : theme === 'blueprint' ? (
+            <cylinderGeometry args={[0.32, 0.32, 0.5, 6]} />
+          ) : (
+            <boxGeometry args={[0.59, 0.59, 0.59]} />
+          )}
           <meshStandardMaterial
-            color={ready ? '#7ad9cf' : '#f5b65b'}
+            color={ready ? palette.ready : palette.warning}
             metalness={0.5}
             roughness={0.28}
             emissive={selectedContainer ? '#3b847e' : ready ? '#0e2529' : '#59340c'}
@@ -178,37 +186,55 @@ function Pod({
       </group>
       <mesh position={[resource.position[0], 0.15, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.58, 0.63, 48]} />
-        <meshBasicMaterial color={ready ? '#66e4df' : '#f5b65b'} />
+        <meshBasicMaterial color={ready ? palette.ready : palette.warning} />
       </mesh>
     </>
   )
 }
 
 function House({ selected, kind, motion, onSelect }: Props) {
+  const { theme } = useTheme()
+  const palette = themes[theme]
   const ids = highlightedIds(kind, selected)
   return (
     <group>
-      <Box position={[0, -0.13, 0]} size={[11.3, 0.3, 5.5]} color="#142236" />
-      <Box position={[0, 1.35, -2.45]} size={[10.8, 2.7, 0.12]} color="#223952" opacity={0.55} />
-      <Box position={[0, 0.7, 0]} size={[0.09, 1.4, 4.8]} color="#486078" opacity={0.6} />
-      {[-5.4, 5.4].flatMap((x) =>
-        [-2.45, 2.45].map((z) => (
-          <Box key={`${x}-${z}`} position={[x, 1.6, z]} size={[0.12, 3.2, 0.12]} color="#556c86" />
-        )),
+      {theme !== 'midnight' ? (
+        <ClusterStructure theme={theme} width={10.8} depth={4.9} height={3.2} />
+      ) : (
+        <>
+          <Box position={[0, -0.13, 0]} size={[11.3, 0.3, 5.5]} color="#142236" />
+          <Box
+            position={[0, 1.35, -2.45]}
+            size={[10.8, 2.7, 0.12]}
+            color="#223952"
+            opacity={0.55}
+          />
+          <Box position={[0, 0.7, 0]} size={[0.09, 1.4, 4.8]} color="#486078" opacity={0.6} />
+          {[-5.4, 5.4].flatMap((x) =>
+            [-2.45, 2.45].map((z) => (
+              <Box
+                key={`${x}-${z}`}
+                position={[x, 1.6, z]}
+                size={[0.12, 3.2, 0.12]}
+                color="#556c86"
+              />
+            )),
+          )}
+          {[-2.45, 2.45].map((z) => (
+            <group key={z}>
+              <mesh position={[-2.7, 3.92, z]} rotation={[0, 0, Math.atan2(1.5, 5.4)]}>
+                <boxGeometry args={[5.6, 0.1, 0.1]} />
+                <meshStandardMaterial color="#7295b8" metalness={0.6} roughness={0.35} />
+              </mesh>
+              <mesh position={[2.7, 3.92, z]} rotation={[0, 0, -Math.atan2(1.5, 5.4)]}>
+                <boxGeometry args={[5.6, 0.1, 0.1]} />
+                <meshStandardMaterial color="#7295b8" metalness={0.6} roughness={0.35} />
+              </mesh>
+            </group>
+          ))}
+          <Box position={[0, 4.67, 0]} size={[0.1, 0.1, 4.9]} color="#7295b8" />
+        </>
       )}
-      {[-2.45, 2.45].map((z) => (
-        <group key={z}>
-          <mesh position={[-2.7, 3.92, z]} rotation={[0, 0, Math.atan2(1.5, 5.4)]}>
-            <boxGeometry args={[5.6, 0.1, 0.1]} />
-            <meshStandardMaterial color="#7295b8" metalness={0.6} roughness={0.35} />
-          </mesh>
-          <mesh position={[2.7, 3.92, z]} rotation={[0, 0, -Math.atan2(1.5, 5.4)]}>
-            <boxGeometry args={[5.6, 0.1, 0.1]} />
-            <meshStandardMaterial color="#7295b8" metalness={0.6} roughness={0.35} />
-          </mesh>
-        </group>
-      ))}
-      <Box position={[0, 4.67, 0]} size={[0.1, 0.1, 4.9]} color="#7295b8" />
       {resources
         .filter((item) => item.kind === 'Node')
         .map((node) => (
@@ -223,7 +249,7 @@ function House({ selected, kind, motion, onSelect }: Props) {
           >
             <boxGeometry args={[4.9, 0.1, 4.5]} />
             <meshStandardMaterial
-              color={ids.has(node.id) ? '#235261' : '#1c3046'}
+              color={ids.has(node.id) ? palette.activeRoom : palette.room}
               metalness={0.2}
               roughness={0.65}
             />
@@ -244,6 +270,8 @@ function House({ selected, kind, motion, onSelect }: Props) {
 }
 
 export function HabitatScene(props: Props) {
+  const themeState = useTheme()
+  const palette = themes[themeState.theme]
   return (
     <Canvas
       shadows
@@ -252,27 +280,29 @@ export function HabitatScene(props: Props) {
       camera={{ position: [11, 9, 12], fov: 42 }}
       aria-label="Interactive 3D demonstration of a cluster house with two node rooms and three pods"
     >
-      <color attach="background" args={['#0d1726']} />
-      <fog attach="fog" args={['#0d1726', 25, 55]} />
-      <ambientLight intensity={1.15} />
-      <directionalLight
-        position={[3, 10, 5]}
-        intensity={2.4}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
-      />
-      <pointLight position={[-5, 4, 2]} color="#44c9d4" intensity={15} />
-      <House {...props} />
-      <gridHelper args={[40, 40, '#253b51', '#152539']} position={[0, -0.3, 0]} />
-      <CameraRig
-        selected={props.selected}
-        motion={props.motion}
-        focusRevision={props.focusRevision}
-      />
+      <ThemeContext.Provider value={themeState}>
+        <color attach="background" args={[palette.background]} />
+        <fog attach="fog" args={[palette.background, 25, 55]} />
+        <ambientLight intensity={1.15} />
+        <directionalLight
+          position={[3, 10, 5]}
+          intensity={2.4}
+          castShadow
+          shadow-mapSize={[1024, 1024]}
+          shadow-camera-left={-10}
+          shadow-camera-right={10}
+          shadow-camera-top={10}
+          shadow-camera-bottom={-10}
+        />
+        <pointLight position={[-5, 4, 2]} color="#44c9d4" intensity={15} />
+        <House {...props} />
+        <gridHelper args={[40, 40, palette.grid, palette.gridMinor]} position={[0, -0.3, 0]} />
+        <CameraRig
+          selected={props.selected}
+          motion={props.motion}
+          focusRevision={props.focusRevision}
+        />
+      </ThemeContext.Provider>
     </Canvas>
   )
 }
