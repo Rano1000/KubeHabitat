@@ -56,9 +56,9 @@ examples**. Live data never falls back to those fixtures.
 
 Available in this branch:
 
-- Three selectable visual worlds: original Midnight Habitat, sunlit Garden Habitat and Blueprint
-  Studio, with distinct interface layouts and 3D cluster, pod, container and Service styles. See the
-  [theme gallery](docs/themes.md).
+- Six selectable visual worlds: Midnight Habitat, Garden Habitat, Blueprint Studio, Pearl Habitat,
+  Aurora Habitat and Slate Habitat, with distinct interface palettes and 3D cluster, pod, container
+  and Service styles. The original themes remain available. See the [theme gallery](docs/themes.md).
 - React / TypeScript interface with a Three.js house generated from observed nodes, pods and all
   app, init and ephemeral containers, including multiple containers inside a single pod.
 - Searchable inventory, resource-kind highlighting, clickable objects, and guided camera focus.

@@ -1,5 +1,6 @@
 import progressiveExploration from '../../docs/assets/progressive-exploration.svg'
 import themeHabitats from '../../docs/assets/theme-habitats.svg'
+import modernHabitats from '../../docs/assets/modern-habitats.svg'
 import lifecycleEvidence from '../../docs/assets/lifecycle-evidence.svg'
 import componentSignals from '../../docs/assets/component-signals.svg'
 import investigationFlow from '../../docs/assets/investigation-flow.svg'
@@ -165,7 +166,7 @@ export function Docs() {
           </p>
         </section>
         <section className="doc-card wide">
-          <span className="eyebrow">THREE VISUAL WORLDS / ONE LIVE CLUSTER</span>
+          <span className="eyebrow">SIX VISUAL WORLDS / ONE LIVE CLUSTER</span>
           <h2>Choose your habitat.</h2>
           <img
             src={themeHabitats}
@@ -173,14 +174,42 @@ export function Docs() {
             style={{ width: '100%' }}
           />
           <p>
-            Use the Theme dropdown to choose Midnight Habitat, Garden Habitat or Blueprint Studio.
+            Use the Theme dropdown to choose Midnight, Garden, Blueprint, Pearl, Aurora or Slate.
             Panels, icons, cluster frames, pods, containers and Service guides change together. Your
             selection and live Kubernetes observations stay intact.
           </p>
           <p>
             The theme is remembered on this browser. Reduced motion, full-screen monitoring and
-            freshness rules work in all three themes.
+            freshness rules work in all six themes.
           </p>
+          <img
+            src={modernHabitats}
+            alt="Pearl's airy glass capsules, Aurora's orbital pods and Slate's satin enclosures"
+            style={{ width: '100%' }}
+          />
+          <div className="theme-gallery">
+            <article>
+              <h3>Pearl Habitat</h3>
+              <p>
+                Bright porcelain surfaces, glass capsules and an open pavilion. Gentle movement and
+                a quiet blue accent.
+              </p>
+            </article>
+            <article>
+              <h3>Aurora Habitat</h3>
+              <p>
+                Indigo glass, soft orbital collars and playful astronaut Service guides. Colourful
+                without obscuring health signals.
+              </p>
+            </article>
+            <article>
+              <h3>Slate Habitat</h3>
+              <p>
+                Charcoal surfaces, satin modules and tailored guides. Restrained movement for a
+                focused monitoring session.
+              </p>
+            </article>
+          </div>
         </section>
         <section className="doc-card wide">
           <span className="eyebrow">PROGRESSIVE EXPLORATION / SCALE REVIEW</span>

@@ -2,8 +2,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
 import { Group, Vector3 } from 'three'
-import { ThemeContext, themes, useTheme } from './themes'
-import { ClusterStructure, PodShell, SoftBox } from './ThemeGeometry'
+import { ThemeContext, themes, useTheme, isModernTheme, themeMotion } from './themes'
+import { ClusterStructure, PodShell, ContainerShape } from './ThemeGeometry'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { highlightedIds, pods, resources } from './demo'
 import type { Resource, ResourceKind } from './demo'
@@ -132,8 +132,11 @@ function Pod({
   useFrame(({ clock }, delta) => {
     if (!group.current || !motion || !ready) return
     group.current.position.y =
-      resource.position[1] + Math.sin(clock.elapsedTime * 1.1 + resource.position[0]) * 0.12
-    group.current.rotation.y += Math.min(delta, 0.1) * 0.22
+      resource.position[1] +
+      Math.sin(clock.elapsedTime * 1.1 + resource.position[0]) *
+        (isModernTheme(theme) ? themeMotion(theme).float : 0.12)
+    group.current.rotation.y +=
+      Math.min(delta, 0.1) * (isModernTheme(theme) ? themeMotion(theme).spin : 0.22)
   })
   const selectPod = (event: ThreeEvent<MouseEvent>) => {
     // Wireframe meshes still raycast their faces. Prefer an inner box hit so the shell cannot hide its container.
@@ -162,16 +165,10 @@ function Pod({
           onClick={selectPod}
         />
         <mesh onClick={selectContainer} userData={{ resourceId: container.id }} castShadow>
-          {theme === 'garden' ? (
-            <SoftBox size={[0.59, 0.59, 0.59]} />
-          ) : theme === 'blueprint' ? (
-            <cylinderGeometry args={[0.32, 0.32, 0.5, 6]} />
-          ) : (
-            <boxGeometry args={[0.59, 0.59, 0.59]} />
-          )}
+          <ContainerShape theme={theme} size={[0.59, 0.59, 0.59]} />
           <meshStandardMaterial
             color={ready ? palette.ready : palette.warning}
-            metalness={0.5}
+            metalness={isModernTheme(theme) ? 0.12 : 0.5}
             roughness={0.28}
             emissive={selectedContainer ? '#3b847e' : ready ? '#0e2529' : '#59340c'}
             emissiveIntensity={0.7}

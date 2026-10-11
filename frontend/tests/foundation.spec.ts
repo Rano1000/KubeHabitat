@@ -149,3 +149,35 @@ test('HTML inspection remains usable when WebGL cannot initialize', async ({ pag
       .getByRole('heading', { name: 'api-example' }),
   ).toBeVisible()
 })
+
+test('new habitats preserve selection and inner container hit targets when their geometry changes', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/#demo')
+  const inspector = page.getByRole('complementary', { name: 'Component details' })
+  for (const theme of ['pearl', 'aurora', 'slate']) {
+    await page.getByLabel('Theme', { exact: true }).selectOption(theme)
+    await page.getByRole('button', { name: /worker-example Pod/ }).click()
+    await expect(
+      inspector.getByRole('heading', { name: 'worker-example', exact: true }),
+    ).toBeVisible()
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    )
+    const bounds = await page.locator('canvas').boundingBox()
+    expect(bounds).not.toBeNull()
+    await page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2)
+    await expect(inspector.getByRole('heading', { name: 'worker', exact: true })).toBeVisible()
+    await expect(inspector.getByText('CrashLoopBackOff', { exact: true })).toBeVisible()
+    await expect(page.getByText('Reduced motion is enabled by your system.')).toBeVisible()
+  }
+  await page.reload()
+  await expect(page.getByLabel('Theme', { exact: true })).toHaveValue('slate')
+  expect(errors).toEqual([])
+})

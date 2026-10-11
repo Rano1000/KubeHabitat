@@ -18,9 +18,9 @@ import type { LiveResource } from './useClusterSnapshot'
 import { storageFacts } from './habitatView'
 import { patrolPose, podServices, serviceColor, servicePatrol } from './serviceGuide'
 import type { ScaleLayout, Summary, GroupPlacement } from './scaleModel'
-import { ThemeContext, themes, useTheme } from './themes'
+import { ThemeContext, themes, useTheme, isModernTheme, themeMotion } from './themes'
 import type { ThemeId } from './themes'
-import { ClusterStructure, PodShell, SoftBox } from './ThemeGeometry'
+import { ClusterStructure, PodShell, SoftBox, ContainerShape } from './ThemeGeometry'
 import { lifecycle, lifecycleLabels, lifecycleMarks } from './lifecycle'
 import { componentAppearance } from './componentAppearance'
 import type { ComponentAppearance } from './componentAppearance'
@@ -75,6 +75,8 @@ function ServiceGuide({
   highlighted: boolean
 }) {
   const guide = useRef<Group>(null)
+  const theme = props.theme ?? 'midnight'
+  const modern = isModernTheme(theme)
   const leftArm = useRef<Group>(null),
     rightArm = useRef<Group>(null)
   const leftLeg = useRef<Group>(null),
@@ -111,7 +113,7 @@ function ServiceGuide({
   }, [routeKey])
   useFrame((_, delta) => {
     if (!walking || !guide.current) return
-    distance.current += Math.min(delta, 0.1) * 0.65
+    distance.current += Math.min(delta, 0.1) * themeMotion(theme).walk
     const pose = patrolPose(route.points, distance.current)
     guide.current.position.set(...pose.position)
     guide.current.rotation.y = pose.yaw
@@ -128,7 +130,6 @@ function ServiceGuide({
   const uniform = (
     <meshStandardMaterial color={tint} transparent opacity={opacity} roughness={0.58} />
   )
-  const theme = props.theme ?? 'midnight'
   return (
     <>
       <mesh position={route.points[0]} rotation={[-Math.PI / 2, 0, 0]} onClick={choose}>
@@ -137,7 +138,9 @@ function ServiceGuide({
       </mesh>
       <group ref={guide} position={route.points[0]} onClick={choose}>
         <mesh position={[0, 0.8, 0]}>
-          {theme === 'blueprint' ? (
+          {modern ? (
+            <SoftBox size={[0.36, 0.48, 0.28]} radius={theme === 'slate' ? 0.055 : 0.12} />
+          ) : theme === 'blueprint' ? (
             <boxGeometry args={[0.38, 0.48, 0.3]} />
           ) : (
             <capsuleGeometry args={[0.19, 0.24, 4, 12]} />
@@ -151,7 +154,13 @@ function ServiceGuide({
             <sphereGeometry args={[0.17, 16, 12]} />
           )}
           <meshStandardMaterial
-            color={observed ? (theme === 'blueprint' ? '#dbe8f4' : '#e2bf9c') : '#9ca3aa'}
+            color={
+              observed
+                ? theme === 'blueprint' || theme === 'aurora'
+                  ? '#dbe8f4'
+                  : '#e2bf9c'
+                : '#9ca3aa'
+            }
             transparent
             opacity={opacity}
           />
@@ -192,10 +201,40 @@ function ServiceGuide({
             </mesh>
           </>
         )}
-        <mesh position={[0, 1.32, 0.13]}>
-          <boxGeometry args={[0.28, 0.035, 0.16]} />
-          {uniform}
-        </mesh>
+        {modern && (
+          <>
+            <mesh position={[0, 0.99, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.14, 0.025, 6, 20]} />
+              <meshStandardMaterial
+                color={theme === 'pearl' ? '#ffffff' : '#c8d5e6'}
+                transparent
+                opacity={opacity}
+              />
+            </mesh>
+            <mesh position={[0, 0.81, 0.151]}>
+              <SoftBox size={[0.12, 0.08, 0.015]} radius={0.015} />
+              <meshStandardMaterial color="#eef5ff" transparent opacity={opacity} />
+            </mesh>
+            {theme === 'aurora' && (
+              <mesh position={[0, 1.22, 0.149]}>
+                <SoftBox size={[0.24, 0.075, 0.06]} radius={0.025} />
+                <meshStandardMaterial
+                  color="#22273e"
+                  metalness={0.3}
+                  roughness={0.25}
+                  transparent
+                  opacity={opacity}
+                />
+              </mesh>
+            )}
+          </>
+        )}
+        {!modern && (
+          <mesh position={[0, 1.32, 0.13]}>
+            <boxGeometry args={[0.28, 0.035, 0.16]} />
+            {uniform}
+          </mesh>
+        )}
         {[-0.057, 0.057].map((x) => (
           <mesh key={x} position={[x, 1.21, 0.153]}>
             <sphereGeometry args={[0.023, 8, 8]} />
@@ -246,12 +285,14 @@ function ServiceGuide({
             </mesh>
           </group>
         ))}
-        <Label
-          text={`SERVICE · ${resource.name}\n${observed && destinationsFresh ? `${destinations} pod destinations · routing guide` : 'Destination freshness unknown'}`}
-          position={[0, 1.75, 0]}
-          width={2.9}
-          onClick={choose}
-        />
+        {(!modern || props.selected === resource.id) && (
+          <Label
+            text={`SERVICE · ${resource.name}\n${observed && destinationsFresh ? `${destinations} pod destinations · routing guide` : 'Destination freshness unknown'}`}
+            position={[0, 1.75, 0]}
+            width={2.9}
+            onClick={choose}
+          />
+        )}
       </group>
     </>
   )
@@ -291,7 +332,16 @@ function Infrastructure({
   return (
     <group position={position}>
       <mesh onClick={choose}>
-        {theme === 'garden' ? (
+        {isModernTheme(theme) ? (
+          storage ? (
+            <SoftBox
+              size={resource.kind === 'Volume' ? [0.35, 0.3, 0.35] : [0.65, 0.65, 0.55]}
+              radius={0.09}
+            />
+          ) : (
+            <sphereGeometry args={[0.4, 20, 12]} />
+          )
+        ) : theme === 'garden' ? (
           storage ? (
             <capsuleGeometry
               args={[
@@ -602,8 +652,10 @@ function Pod({
   }, [pod.position.join(':'), alive])
   useFrame(({ clock }, delta) => {
     if (!group.current || !props.motion || !alive) return
-    group.current.position.y = pod.position[1] + Math.sin(clock.elapsedTime + pod.position[0]) * 0.1
-    group.current.rotation.y += Math.min(delta, 0.1) * 0.18
+    const movement = themeMotion(props.theme ?? 'midnight')
+    group.current.position.y =
+      pod.position[1] + Math.sin(clock.elapsedTime + pod.position[0]) * movement.float
+    group.current.rotation.y += Math.min(delta, 0.1) * movement.spin
   })
   const choosePod = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
@@ -707,32 +759,18 @@ function Pod({
             }}
             userData={{ resourceId: c.resource.id }}
           >
-            {theme === 'garden' ? (
-              <SoftBox
-                size={pod.containers.length === 1 ? [0.58, 0.58, 0.58] : [0.37, 0.45, 0.37]}
-              />
-            ) : theme === 'blueprint' ? (
-              <cylinderGeometry
-                args={[
-                  pod.containers.length === 1 ? 0.32 : 0.21,
-                  pod.containers.length === 1 ? 0.32 : 0.21,
-                  0.48,
-                  6,
-                ]}
-              />
-            ) : (
-              <boxGeometry
-                args={pod.containers.length === 1 ? [0.58, 0.58, 0.58] : [0.37, 0.45, 0.37]}
-              />
-            )}
+            <ContainerShape
+              theme={theme}
+              size={pod.containers.length === 1 ? [0.58, 0.58, 0.58] : [0.37, 0.45, 0.37]}
+            />
             <meshStandardMaterial
               color={color(c.resource, props.fresh(c.resource), theme)}
               emissive={color(c.resource, props.fresh(c.resource), theme)}
               emissiveIntensity={highlighted.has(c.resource.id) ? 0.3 : 0}
               transparent
               opacity={highlighted.has(c.resource.id) || highlighted.has(resource.id) ? 1 : 0.35}
-              metalness={0.45}
-              roughness={0.32}
+              metalness={isModernTheme(theme) ? 0.12 : 0.45}
+              roughness={theme === 'slate' ? 0.6 : 0.32}
             />
           </mesh>
         ))}
@@ -774,7 +812,7 @@ function Pod({
           <Label
             text={`${resource.name}\n${appearance.label}`}
             position={[0, pod.radius + 0.4, 0]}
-            width={3.2}
+            width={isModernTheme(theme) ? 2.6 : 3.2}
           />
         ) : null}
       </group>
@@ -860,7 +898,9 @@ function GroupedWorkloads({ props }: { props: Props }) {
           if (entry) props.onSelect(entry.group.id)
         }}
       >
-        {theme === 'garden' ? (
+        {isModernTheme(theme) ? (
+          <sphereGeometry args={[0.9, 16, 12]} />
+        ) : theme === 'garden' ? (
           <dodecahedronGeometry args={[1, 0]} />
         ) : theme === 'blueprint' ? (
           <octahedronGeometry args={[1, 0]} />
@@ -868,7 +908,7 @@ function GroupedWorkloads({ props }: { props: Props }) {
           <icosahedronGeometry args={[1, 0]} />
         )}
         <meshStandardMaterial
-          wireframe={theme !== 'garden'}
+          wireframe={theme !== 'garden' && !isModernTheme(theme)}
           roughness={0.6}
           transparent={theme === 'garden'}
           opacity={theme === 'garden' ? 0.6 : 1}
@@ -922,7 +962,9 @@ function GroupPreview({ entry, props }: { entry: GroupPlacement; props: Props })
           if (pod) props.onSelect(pod.id)
         }}
       >
-        {theme === 'garden' ? (
+        {isModernTheme(theme) ? (
+          <sphereGeometry args={[0.12, 10, 8]} />
+        ) : theme === 'garden' ? (
           <sphereGeometry args={[0.12, 10, 8]} />
         ) : theme === 'blueprint' ? (
           <cylinderGeometry args={[0.12, 0.12, 0.2, 6]} />
@@ -967,7 +1009,7 @@ function House(props: Props) {
               props.onSelect(room.resource.id)
             }}
           >
-            {theme === 'garden' ? (
+            {theme === 'garden' || isModernTheme(theme) ? (
               <SoftBox size={[room.width, 0.08, room.depth]} radius={0.04} />
             ) : (
               <boxGeometry args={[room.width, 0.08, room.depth]} />
@@ -989,15 +1031,20 @@ function House(props: Props) {
             tint={theme === 'midnight' ? '#56809b' : palette.frame}
             opacity={0.22}
           />
-          <Label
-            text={`${room.resource.name} · ${props.nodeSummaries.get(room.resource.name)?.total ?? 0} pods · ${props.nodeSummaries.get(room.resource.name)?.warning ?? 0} investigate · ${props.nodeSummaries.get(room.resource.name)?.unknown ?? 0} unknown`}
-            position={[0, height - 0.35, -room.depth / 2 + 0.35]}
-            width={Math.min(room.width - 0.3, 5)}
-            onClick={(e) => {
-              e.stopPropagation()
-              props.onSelect(room.resource.id)
-            }}
-          />
+          {(!isModernTheme(theme) ||
+            !props.selected ||
+            byId.get(props.selected)?.kind === 'Namespace' ||
+            room.resource.id === props.selected) && (
+            <Label
+              text={`${room.resource.name} · ${props.nodeSummaries.get(room.resource.name)?.total ?? 0} pods · ${props.nodeSummaries.get(room.resource.name)?.warning ?? 0} investigate · ${props.nodeSummaries.get(room.resource.name)?.unknown ?? 0} unknown`}
+              position={[0, height - 0.35, -room.depth / 2 + 0.35]}
+              width={Math.min(room.width - 0.3, 5)}
+              onClick={(e) => {
+                e.stopPropagation()
+                props.onSelect(room.resource.id)
+              }}
+            />
+          )}
           {props.layers.capacity && room.resource.details && (
             <group
               position={[-room.width / 2 + 0.55, 0.3, -room.depth / 2 + 0.8]}
@@ -1165,11 +1212,24 @@ export function LiveHabitatScene(props: Props) {
     >
       <ThemeContext.Provider value={themeState}>
         <color attach="background" args={[palette.background]} />
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[5, 12, 8]} intensity={2.5} />
+        <ambientLight intensity={themeState.theme === 'pearl' ? 2 : 1.5} />
+        <directionalLight
+          position={[5, 12, 8]}
+          intensity={isModernTheme(themeState.theme) ? 1.8 : 2.5}
+        />
         <pointLight
           position={[-5, 5, 2]}
-          color={themeState.theme === 'garden' ? '#fff1c8' : '#6adde0'}
+          color={
+            themeState.theme === 'pearl'
+              ? '#e4edff'
+              : themeState.theme === 'aurora'
+                ? '#b5a5f3'
+                : themeState.theme === 'slate'
+                  ? '#cfdfef'
+                  : themeState.theme === 'garden'
+                    ? '#fff1c8'
+                    : '#6adde0'
+          }
           intensity={themeState.theme === 'midnight' ? 22 : 9}
         />
         <House {...props} theme={themeState.theme} />

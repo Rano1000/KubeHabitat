@@ -137,7 +137,7 @@ test('expanded monitoring keeps pod actions visible and usable in every theme', 
   await page.getByRole('button', { name: 'Details', exact: true }).click()
   const details = page.getByRole('complementary', { name: 'Live component details' })
   const menu = page.getByRole('menu', { name: 'Actions for pod real-worker' })
-  for (const theme of ['midnight', 'garden', 'blueprint']) {
+  for (const theme of ['midnight', 'garden', 'blueprint', 'pearl', 'aurora', 'slate']) {
     await page.getByLabel('Monitoring theme', { exact: true }).selectOption(theme)
     await details.getByRole('button', { name: 'Pod actions ⋯', exact: true }).click()
     await expect(menu).toBeVisible()

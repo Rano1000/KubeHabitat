@@ -5,7 +5,7 @@ import { isWarning, kinds, resources } from './demo'
 import type { ResourceKind } from './demo'
 import { SceneBoundary } from './SceneBoundary'
 import { useBackendStatus } from './useBackendStatus'
-import { ThemeSelector, useTheme } from './themes'
+import { ThemeSelector, useTheme, ResourceGlyph, isModernTheme } from './themes'
 
 const HabitatScene = lazy(() =>
   import('./HabitatScene').then((module) => ({ default: module.HabitatScene })),
@@ -193,13 +193,17 @@ export function App() {
                     onClick={() => setSelected(resource.id)}
                   >
                     <span className={`resource-symbol ${isWarning(resource) ? 'warning' : ''}`}>
-                      {resource.kind === 'Node'
-                        ? '▣'
-                        : resource.kind === 'Namespace'
-                          ? '◈'
-                          : resource.kind === 'Pod'
-                            ? '⬡'
-                            : '□'}
+                      {isModernTheme(theme) ? (
+                        <ResourceGlyph kind={resource.kind} />
+                      ) : resource.kind === 'Node' ? (
+                        '▣'
+                      ) : resource.kind === 'Namespace' ? (
+                        '◈'
+                      ) : resource.kind === 'Pod' ? (
+                        '⬡'
+                      ) : (
+                        '□'
+                      )}
                     </span>
                     <span>
                       <strong>{resource.name}</strong>

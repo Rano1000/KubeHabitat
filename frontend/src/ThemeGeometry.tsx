@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
-import { themes } from './themes'
+import { themes, isModernTheme } from './themes'
 import type { ThemeId } from './themes'
 import type { Point } from './habitatLayout'
 
@@ -27,6 +27,64 @@ export function PodShell({
   opacity?: number
   onClick: (event: ThreeEvent<MouseEvent>) => void
 }) {
+  if (isModernTheme(theme)) {
+    const capsule = theme === 'pearl'
+    const orbit = theme === 'aurora'
+    return (
+      <group>
+        <mesh onClick={onClick}>
+          {capsule ? (
+            <capsuleGeometry args={[radius * 0.72, radius * 0.5, 6, 24]} />
+          ) : orbit ? (
+            <sphereGeometry args={[radius * 0.94, 24, 16]} />
+          ) : (
+            <SoftBox size={[radius * 1.5, radius * 1.75, radius * 1.5]} radius={radius * 0.18} />
+          )}
+          <meshStandardMaterial
+            color={tint}
+            transparent
+            opacity={opacity * 0.1}
+            roughness={0.22}
+            metalness={0.12}
+            depthWrite={false}
+          />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <mesh
+            key={side}
+            onClick={onClick}
+            position={[0, side * radius * (orbit ? 0.18 : 0.68), 0]}
+            rotation={orbit ? [Math.PI / 2 + side * 0.3, side * 0.25, 0] : [Math.PI / 2, 0, 0]}
+          >
+            {theme === 'slate' ? (
+              <SoftBox size={[radius * 1.5, radius * 1.5, radius * 0.045]} radius={radius * 0.16} />
+            ) : (
+              <torusGeometry args={[radius * (orbit ? 0.96 : 0.64), radius * 0.023, 6, 40]} />
+            )}
+            <meshStandardMaterial
+              color={tint}
+              transparent
+              opacity={opacity * (theme === 'slate' ? 0.3 : 0.85)}
+              emissive={tint}
+              emissiveIntensity={orbit ? 0.28 : 0.06}
+              roughness={0.4}
+            />
+          </mesh>
+        ))}
+        {theme === 'slate' &&
+          [-1, 1].map((side) => (
+            <mesh
+              key={`edge:${side}`}
+              position={[side * radius * 0.7, 0, -radius * 0.7]}
+              onClick={onClick}
+            >
+              <SoftBox size={[radius * 0.035, radius * 1.3, radius * 0.035]} radius={0.01} />
+              <meshStandardMaterial color={tint} transparent opacity={opacity} />
+            </mesh>
+          ))}
+      </group>
+    )
+  }
   if (theme === 'midnight')
     return (
       <mesh onClick={onClick}>
@@ -85,6 +143,22 @@ export function PodShell({
   )
 }
 
+/** The same selectable container footprint, with theme-specific edge treatment. */
+export function ContainerShape({ theme, size }: { theme: ThemeId; size: Point }) {
+  return theme === 'blueprint' ? (
+    <cylinderGeometry args={[size[0] * 0.55, size[0] * 0.55, size[1], 6]} />
+  ) : theme === 'garden' || isModernTheme(theme) ? (
+    <SoftBox
+      size={size}
+      radius={
+        theme === 'pearl' ? 0.12 : theme === 'aurora' ? 0.14 : theme === 'slate' ? 0.045 : 0.08
+      }
+    />
+  ) : (
+    <boxGeometry args={size} />
+  )
+}
+
 export function ClusterStructure({
   theme,
   width,
@@ -97,6 +171,56 @@ export function ClusterStructure({
   height: number
 }) {
   const palette = themes[theme]
+  if (isModernTheme(theme))
+    return (
+      <group>
+        <mesh position={[0, -0.13, 0]}>
+          <SoftBox size={[width + 0.4, 0.3, depth + 0.4]} radius={0.14} />
+          <meshStandardMaterial color={palette.floor} roughness={0.7} />
+        </mesh>
+        {[-width / 2, width / 2].flatMap((x) =>
+          [-depth / 2, depth / 2].map((z) => (
+            <mesh key={`${x}:${z}`} position={[x, height / 2, z]}>
+              <SoftBox size={[0.065, height, 0.065]} radius={0.025} />
+              <meshStandardMaterial color={palette.frame} roughness={0.45} />
+            </mesh>
+          )),
+        )}
+        {[-depth / 2, depth / 2].map((z) => (
+          <mesh key={z} position={[0, height, z]}>
+            <SoftBox size={[width, 0.075, 0.075]} radius={0.035} />
+            <meshStandardMaterial
+              color={palette.frame}
+              emissive={palette.frame}
+              emissiveIntensity={theme === 'aurora' ? 0.2 : 0}
+            />
+          </mesh>
+        ))}
+        {[-width / 2, width / 2].map((x) => (
+          <mesh key={x} position={[x, height, 0]}>
+            <SoftBox size={[0.075, 0.075, depth]} radius={0.035} />
+            <meshStandardMaterial color={palette.frame} />
+          </mesh>
+        ))}
+        {theme === 'pearl' && (
+          <mesh position={[0, height + 0.025, 0]}>
+            <SoftBox size={[width * 0.95, 0.03, depth * 0.95]} radius={0.01} />
+            <meshStandardMaterial color="#ffffff" transparent opacity={0.045} depthWrite={false} />
+          </mesh>
+        )}
+        {theme === 'aurora' &&
+          [-depth / 2, depth / 2].map((z) => (
+            <mesh key={`arch:${z}`} position={[0, height, z]} scale={[1, 0.14, 1]}>
+              <torusGeometry args={[width / 2, 0.06, 6, 40, Math.PI]} />
+              <meshStandardMaterial
+                color={palette.frame}
+                emissive={palette.frame}
+                emissiveIntensity={0.25}
+              />
+            </mesh>
+          ))}
+      </group>
+    )
   const roofRise = Math.min(2, width * 0.16)
   const roofLength = Math.hypot(width / 2, roofRise)
   const beam = (position: Point, size: Point, tint = palette.frame, opacity = 1) => (

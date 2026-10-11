@@ -50,3 +50,7 @@ is explanatory artwork, not a live screenshot or automatic diagnosis.
 `pod-actions.svg` is original source-authored KubeHabitat artwork explaining the implemented pod
 actions workflow. Its gentle container highlight supports reduced motion. It illustrates a workflow,
 not live telemetry or a proven root cause.
+
+`modern-habitats.svg` is original source-authored KubeHabitat artwork illustrating Pearl's glass
+capsules, Aurora's orbital pods and Slate's satin enclosures. Its gentle floating and orbital
+animations respect reduced motion. It is a theme illustration, not live telemetry.
