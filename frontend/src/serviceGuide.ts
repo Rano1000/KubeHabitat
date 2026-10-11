@@ -1,4 +1,26 @@
 import type { HabitatLayout, Point } from './habitatLayout'
+import type { LiveResource } from './useClusterSnapshot'
+
+// Uniform identity is independent of health, pod replacements, ordering and namespace filters.
+export function serviceColor(service: LiveResource) {
+  let hash = 2166136261
+  for (const letter of `${service.namespace ?? ''}/${service.name}`) {
+    hash = Math.imul(hash ^ letter.charCodeAt(0), 16777619)
+  }
+  hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b)
+  hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b)
+  hash ^= hash >>> 16
+  return `hsl(${(((hash >>> 0) / 4294967296) * 360).toFixed(3)}, 68%, 62%)`
+}
+
+export function podServices(layout: HabitatLayout, podId: string) {
+  const identities = new Set(
+    layout.edges.filter((edge) => edge.to === podId).map((edge) => edge.from),
+  )
+  return layout.resources
+    .filter((r) => r.kind === 'Service' && identities.has(r.id))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+}
 
 // One visual guide per Service; only observed endpoint pod identities determine its rooms.
 export function servicePatrol(layout: HabitatLayout, serviceId: string) {

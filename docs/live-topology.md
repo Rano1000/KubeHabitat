@@ -21,6 +21,14 @@ those relationships in the background; they do not need to occupy the default sc
 networking, storage and resource layers start hidden. Hiding a layer changes presentation, not
 discovery or the observed inventory.
 
+Uniform colour identifies the Service using its namespace and name. The same colour appears on its
+route links and small badges above its observed destination pods. Multiple Services targeting one
+pod produce multiple badges. Colours remain consistent across namespace filters, snapshot ordering
+and pod replacement. A clickable **Service uniforms** legend and each pod's **Services serving this
+pod** section expose the relationship by name as well as colour. Pod health colours and namespace
+floor rings retain their independent meanings; a stale Service keeps its colour with reduced
+opacity.
+
 1. Select a namespace to scope its pods and Services across their real node assignments.
 2. Select a pod to inspect its containers and existing volume attachments.
 3. Choose **Explore this pod’s storage** to reveal that pod’s volumes, claims, bound PVs and
@@ -71,9 +79,10 @@ describes provisioning. These relationships follow the
 
 ## Network signals
 
-Blue connectors show observed references: ingress to service, service to EndpointSlice targets, and
-the slice's pod identities. They do not animate as traffic. Endpoint readiness is available in the
-inspector; it does not certify application responses.
+Service-coloured connectors show their configured pod destinations. Blue connectors show other
+observed network references: ingress to service, service to EndpointSlice targets, and the slice's
+pod identities. They do not animate as traffic. Endpoint readiness is available in the inspector; it
+does not certify application responses.
 
 The **Pod → pod policy check** evaluates a direction, destination port and protocol. Source egress
 and destination ingress must both permit the declared connection. Rules across policies are

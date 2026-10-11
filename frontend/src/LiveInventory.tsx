@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { liveKinds, useClusterSnapshot } from './useClusterSnapshot'
 import type { LiveKind, LiveResource } from './useClusterSnapshot'
 import { buildHabitatLayout, namespaceColor } from './habitatLayout'
+import { podServices, serviceColor } from './serviceGuide'
 import { SceneBoundary } from './SceneBoundary'
 import { policyCheck } from './networkPolicy'
 import {
@@ -404,7 +405,10 @@ export function LiveInventory() {
                 aria-pressed={selected === r.id}
                 onClick={() => select(r.id)}
               >
-                <span className="resource-glyph">
+                <span
+                  className="resource-glyph"
+                  style={r.kind === 'Service' ? { color: serviceColor(r) } : undefined}
+                >
                   {r.kind === 'Node'
                     ? '▣'
                     : r.kind === 'Namespace'
@@ -595,13 +599,28 @@ export function LiveInventory() {
                 </button>
               ))}
           </div>
+          <div
+            className="namespace-legend service-color-legend"
+            aria-label="Service uniform colours"
+          >
+            <span className="scope-note">Service uniforms</span>
+            {resources
+              .filter((r) => r.kind === 'Service')
+              .map((service) => (
+                <button key={service.id} className="text-link" onClick={() => select(service.id)}>
+                  <i style={{ background: serviceColor(service) }} />
+                  {service.name}
+                </button>
+              ))}
+          </div>
           <p className="scope-note scene-note">
             Floor rings show namespace membership across rooms. Room size reflects object placement,
             not CPU or memory capacity. Healthy motion requires fresh Pod Ready observations.
           </p>
           <p className="scope-note scene-note">
-            Services are walking routing guides. Their patrol is ambient animation, not measured
-            traffic or security enforcement. Blue links show configured pod destinations.
+            Uniform colours match the badges on each Service’s destination pods and its route links.
+            A pod served by several Services has several badges. Pod health colours and namespace
+            floor rings keep their own meanings. Walking is ambient routing animation.
           </p>
           {layers.network && (
             <section className="network-check" aria-label="Pod network policy check">
@@ -758,6 +777,26 @@ export function LiveInventory() {
                         </button>
                       </div>
                     ))}
+                </section>
+              )}
+              {current.kind === 'Pod' && (
+                <section className="relationship-list">
+                  <h4>Services serving this pod</h4>
+                  {podServices(layout, current.id).map((service) => (
+                    <button
+                      key={service.id}
+                      className="text-link"
+                      onClick={() => select(service.id)}
+                    >
+                      <span style={{ color: serviceColor(service) }} aria-hidden="true">
+                        ●{' '}
+                      </span>
+                      {service.name}
+                    </button>
+                  ))}
+                  {podServices(layout, current.id).length === 0 && (
+                    <p className="scope-note">No Service-to-pod destinations observed.</p>
+                  )}
                 </section>
               )}
               {current.kind === 'Pod' && (

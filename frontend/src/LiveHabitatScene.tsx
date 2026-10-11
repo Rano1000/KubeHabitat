@@ -7,7 +7,7 @@ import { namespaceColor, sceneHighlights } from './habitatLayout'
 import type { HabitatLayout, PlacedPod, Point } from './habitatLayout'
 import type { LiveResource } from './useClusterSnapshot'
 import { storageFacts } from './habitatView'
-import { patrolPose, servicePatrol } from './serviceGuide'
+import { patrolPose, podServices, serviceColor, servicePatrol } from './serviceGuide'
 
 type Props = {
   layout: HabitatLayout
@@ -73,8 +73,8 @@ function ServiceGuide({
       )
       .every(props.fresh)
   const walking = props.motion && observed && destinationsFresh && route.roomIds.length > 0
-  const tint = observed ? '#79aaf0' : '#8594a6'
-  const opacity = highlighted ? 1 : 0.38
+  const tint = serviceColor(resource)
+  const opacity = (highlighted ? 1 : 0.38) * (observed ? 1 : 0.5)
   const destinations = new Set(
     props.layout.edges
       .filter(
@@ -168,7 +168,7 @@ function ServiceGuide({
           >
             <mesh position={[0, -0.21, 0]}>
               <capsuleGeometry args={[0.073, 0.29, 4, 8]} />
-              <meshStandardMaterial color="#28465f" transparent opacity={opacity} />
+              <meshStandardMaterial color={tint} transparent opacity={opacity} roughness={0.9} />
             </mesh>
             <mesh position={[0, -0.42, 0.055]}>
               <boxGeometry args={[0.14, 0.1, 0.23]} />
@@ -488,6 +488,7 @@ function Pod({
     props.onSelect(inner ? String(inner.object.userData.resourceId) : resource.id)
   }
   const tint = color(resource, props.fresh(resource))
+  const services = podServices(props.layout, resource.id)
   const ns = props.layout.resources.find(
     (r) => r.kind === 'Namespace' && r.name === resource.namespace,
   )
@@ -509,6 +510,23 @@ function Pod({
         <meshBasicMaterial color={namespaceColor(resource.namespace ?? '')} />
       </mesh>
       <group ref={group} position={pod.position}>
+        {services.map((service, index) => (
+          <mesh
+            key={service.id}
+            position={[(index - (services.length - 1) / 2) * 0.24, pod.radius + 0.12, 0]}
+            onClick={(event) => {
+              event.stopPropagation()
+              props.onSelect(service.id)
+            }}
+          >
+            <sphereGeometry args={[0.09, 12, 8]} />
+            <meshBasicMaterial
+              color={serviceColor(service)}
+              transparent
+              opacity={props.fresh(service) ? 1 : 0.45}
+            />
+          </mesh>
+        ))}
         <mesh onClick={choosePod}>
           <icosahedronGeometry args={[pod.radius, 1]} />
           <meshStandardMaterial
@@ -709,9 +727,11 @@ function House(props: Props) {
               from={from}
               to={to}
               tint={
-                networkKinds.has(layout.resources.find((r) => r.id === edge.from)!.kind)
-                  ? '#79aaf0'
-                  : '#e4be77'
+                layout.resources.find((r) => r.id === edge.from)?.kind === 'Service'
+                  ? serviceColor(layout.resources.find((r) => r.id === edge.from)!)
+                  : networkKinds.has(layout.resources.find((r) => r.id === edge.from)!.kind)
+                    ? '#79aaf0'
+                    : '#e4be77'
               }
             />
           ) : null

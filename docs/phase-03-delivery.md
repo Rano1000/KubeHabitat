@@ -84,7 +84,20 @@ The camera includes the full patrol bounds when focusing a Service, so walking d
 frame centred only on its starting marker. Further keyboard accessibility review remains open. The
 full automated browser suite remains locally unverified.
 
-## Further acceptance work
+## Service uniform colours on 2026-10-11
+
+Uniform colours now identify individual Services by namespace/name and match their route links and
+destination pod badges. Multiple Service memberships produce multiple badges. A named, clickable
+uniform legend and pod inspector relationships preserve navigation without relying only on colour.
+Pod health colours and namespace floor rings retain their previous meanings. Stale Service figures
+keep their identity colour with reduced opacity and no patrol animation.
+
+TypeScript, the production build and all 23 existing layout/policy tests pass. Manual browser review
+with 11/11 APIs observed confirmed distinct live swatches: shared Service pink, DNS purple and API
+Service cyan. The shared pod's badge and route link matched its guide's uniform. The refreshed
+[Service preview screenshot](assets/service-guide-preview.png) records the implemented scene.
+
+## Remaining acceptance work
 
 Refine house artwork with the user; verify camera and keyboard navigation across further cluster
 sizes; complete denied access/outage/recovery lab scenarios. Later-phase telemetry,
