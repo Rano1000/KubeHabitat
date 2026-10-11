@@ -23,6 +23,7 @@ import {
 } from './ScaleNavigation'
 import { podServices, serviceColor } from './serviceGuide'
 import { SceneBoundary } from './SceneBoundary'
+import { useMonitoringView } from './useMonitoringView'
 import { policyCheck } from './networkPolicy'
 import {
   overviewKinds,
@@ -54,6 +55,8 @@ function stamp(value?: string) {
 
 export function LiveInventory() {
   const live = useClusterSnapshot()
+  const monitoring = useMonitoringView()
+  const [monitorOptions, setMonitorOptions] = useState(false)
   const [kind, setKind] = useState<LiveKind | 'All'>('All')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
@@ -196,6 +199,7 @@ export function LiveInventory() {
     Math.max(0, Math.ceil(visible.length / INVENTORY_PAGE) - 1),
   )
   const openGroup = (id: string, page = 0) => {
+    if (monitoring.expanded) monitoring.setPanel('details')
     setSelected(id)
     setReplicaPage(page)
     setKind('All')
@@ -218,6 +222,7 @@ export function LiveInventory() {
   const signal = (r: LiveResource) =>
     !fresh(r) || r.state === 'Unknown' ? 'unknown' : warning(r) ? 'warning' : 'ready'
   const select = (id: string) => {
+    if (monitoring.expanded) monitoring.setPanel('details')
     if (groups.some((g) => g.id === id)) {
       openGroup(id)
       return
@@ -315,7 +320,13 @@ export function LiveInventory() {
     }
   }
   return (
-    <main id="main-content" className="explorer live-explorer">
+    <main
+      ref={monitoring.root}
+      id="main-content"
+      className={`explorer live-explorer ${monitoring.expanded ? 'monitoring-expanded' : ''}`}
+      data-monitor-panel={monitoring.panel ?? 'none'}
+      data-monitor-options={monitorOptions}
+    >
       <section className="explorer-intro">
         <div>
           <span className="eyebrow">LIVE KUBERNETES HABITAT / READ ONLY</span>
@@ -655,14 +666,97 @@ export function LiveInventory() {
           }
           data-namespace-scope={namespace}
         >
+          {monitoring.expanded && (
+            <div className="monitor-toolbar" aria-label="Monitoring controls">
+              <div className="monitor-title">
+                <strong>{snapshot?.cluster ?? 'Awaiting a cluster'}</strong>
+                <span role="status">
+                  <i
+                    className={`signal-dot ${!live.stale && snapshot?.connection === 'connected' ? 'ready' : 'unknown'}`}
+                  />
+                  {live.stale
+                    ? 'Observations unknown'
+                    : snapshot?.connection === 'connected'
+                      ? 'Connected'
+                      : 'Partial / disconnected'}
+                  {' · '}
+                  {live.age === null ? 'No snapshot' : `${live.age}s ago`}
+                </span>
+              </div>
+              <div className="monitor-actions">
+                <button
+                  className="subtle-button"
+                  aria-pressed={monitoring.panel === 'components'}
+                  onClick={() =>
+                    monitoring.setPanel(monitoring.panel === 'components' ? null : 'components')
+                  }
+                >
+                  Components
+                </button>
+                <button
+                  className="subtle-button"
+                  aria-pressed={monitoring.panel === 'details'}
+                  onClick={() =>
+                    monitoring.setPanel(monitoring.panel === 'details' ? null : 'details')
+                  }
+                >
+                  Details
+                </button>
+                <button
+                  className="subtle-button"
+                  aria-pressed={monitorOptions}
+                  onClick={() => setMonitorOptions((value) => !value)}
+                >
+                  Scene options
+                </button>
+                <button className="subtle-button" onClick={reset}>
+                  Reset view
+                </button>
+                {!monitoring.fullscreen && (
+                  <button
+                    className="subtle-button"
+                    onClick={() => void monitoring.requestFullscreen()}
+                  >
+                    Full screen
+                  </button>
+                )}
+                <button
+                  ref={monitoring.exitButton}
+                  className="subtle-button monitor-exit"
+                  onClick={monitoring.exit}
+                >
+                  Exit monitoring
+                </button>
+              </div>
+              {monitoring.notice && (
+                <span className="monitor-notice" role="status">
+                  {monitoring.notice}
+                </span>
+              )}
+              {live.error && (
+                <span className="monitor-notice" role="alert">
+                  {live.error}
+                </span>
+              )}
+            </div>
+          )}
           <div className="scene-toolbar">
             <div>
               <strong>{snapshot?.cluster ?? 'Awaiting a cluster'}</strong>
               <span>{namespace === 'All' ? 'Entire cluster' : namespace} · observed objects</span>
             </div>
-            <button className="subtle-button" onClick={reset}>
-              Reset view
-            </button>
+            <div className="scene-actions">
+              <button
+                ref={monitoring.expandButton}
+                className="subtle-button expand-monitoring"
+                onClick={monitoring.enter}
+              >
+                ⛶ Expand monitoring
+              </button>
+              <button className="subtle-button" onClick={reset}>
+                Reset view
+              </button>
+            </div>
           </div>
           <div className="scale-toolbar" aria-label="Scale navigation">
             <label>

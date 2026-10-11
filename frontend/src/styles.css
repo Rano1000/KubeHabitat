@@ -495,6 +495,152 @@ h1 {
 .live-house-panel {
   min-width: 0;
 }
+.scene-actions,
+.monitor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.expand-monitoring {
+  color: var(--teal);
+  border-color: #477d83;
+}
+.live-explorer.monitoring-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  background: #0d1726;
+  overflow: hidden;
+}
+.monitoring-expanded > :not(.live-workspace) {
+  display: none;
+}
+.monitoring-expanded .live-workspace {
+  display: block;
+  position: relative;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.monitoring-expanded .live-house-panel {
+  height: 100%;
+  min-height: 0;
+}
+.monitoring-expanded .scene.live-house-scene {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+.monitoring-expanded .scene-toolbar,
+.monitoring-expanded .scale-toolbar,
+.monitoring-expanded .layer-controls,
+.monitoring-expanded .scale-note,
+.monitoring-expanded .habitat-minimap,
+.monitoring-expanded .activity-panel,
+.monitoring-expanded .namespace-legend,
+.monitoring-expanded .scene-note,
+.monitoring-expanded .network-check,
+.monitoring-expanded .reduced-motion-note {
+  display: none;
+}
+.monitoring-expanded[data-monitor-options='true'] .scale-toolbar,
+.monitoring-expanded[data-monitor-options='true'] .layer-controls {
+  display: flex;
+  flex-shrink: 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.monitor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  background: #111e2d;
+}
+.monitor-title {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.monitor-title strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.monitor-title span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.monitor-notice {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #f5cc94;
+}
+.monitor-exit {
+  border-color: #579693;
+  color: #b5f3e7;
+}
+.monitoring-expanded .inventory,
+.monitoring-expanded .details {
+  display: none;
+  position: absolute;
+  z-index: 5;
+  top: 118px;
+  bottom: 80px;
+  width: min(330px, calc(100% - 32px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #385269;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px #0008;
+  background: #101c2c;
+  margin: 0;
+}
+.monitoring-expanded .inventory {
+  left: 16px;
+}
+.monitoring-expanded .details {
+  right: 16px;
+}
+.monitoring-expanded[data-monitor-panel='components'] .inventory,
+.monitoring-expanded[data-monitor-panel='details'] .details {
+  display: block;
+}
+.monitoring-expanded .live-scene-counts,
+.monitoring-expanded .scene-footer,
+.monitoring-expanded .habitat-breadcrumb {
+  flex-shrink: 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.monitoring-expanded .scene-fallback {
+  height: 100%;
+}
+@media (max-width: 700px), (max-height: 550px) {
+  .monitor-toolbar {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .monitoring-expanded .inventory,
+  .monitoring-expanded .details {
+    top: 150px;
+    bottom: 76px;
+  }
+  .monitoring-expanded .scene-hint {
+    display: none;
+  }
+}
 .scene.live-house-scene {
   flex: none;
   height: clamp(430px, 65vh, 640px);

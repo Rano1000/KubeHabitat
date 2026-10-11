@@ -36,6 +36,18 @@ shared team settings.
 
 ## Keep the scene calm
 
+Use **Expand monitoring** above the house to give the live scene the full window. When supported,
+the browser also enters true full screen. If an embedded browser does not allow full screen, the
+expanded window remains usable. Connection freshness, scoped component counts and the health legend
+stay visible. **Components** opens the existing filters and inventory; selecting a real object opens
+**Details** with its existing evidence and attachments. These panels can be closed to reclaim the
+scene. **Scene options** exposes grouping and visual layers when needed.
+
+**Exit monitoring** or **Escape** returns to the original page and keyboard focus. Namespace,
+application, selection and motion settings stay intact, and the same live scene keeps running.
+Expansion does not reconnect to Kubernetes or change any workload. Measured usage still requires the
+Metrics API; enlarging the display does not invent missing measurements.
+
 Group geometry is instanced, and detailed container geometry is mounted only for revealed pods.
 Service links appear around the selected resource. Multiple real endpoints mapped to the same group
 anchor share one visual link; exact endpoint identities remain in the inspector. More than 32
