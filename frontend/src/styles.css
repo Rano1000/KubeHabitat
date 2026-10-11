@@ -61,8 +61,76 @@
   margin: 18px 0 0;
 }
 .live-explorer .resource-list {
-  max-height: 480px;
+  max-height: 350px;
   overflow-y: auto;
+}
+.live-explorer .kind-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 12px 0;
+  padding-bottom: 10px;
+}
+.live-explorer .kind-filters button {
+  font-size: 10px;
+  padding: 7px 6px;
+  gap: 5px;
+}
+.component-disclosure {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.component-disclosure summary {
+  cursor: pointer;
+}
+.advanced-kind-filters {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.storage-scope {
+  padding: 10px;
+  background: #25302f;
+  font-size: 11px;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+.storage-scope button {
+  display: block;
+  margin-top: 6px;
+}
+.pod-storage-details {
+  margin: 20px 0;
+}
+.identity-disclosure {
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.identity-disclosure summary {
+  cursor: pointer;
+}
+.identity-disclosure dl {
+  margin-top: 12px;
+}
+.storage-card {
+  padding: 12px;
+  margin-top: 12px;
+  border: 1px solid #455046;
+  border-radius: 8px;
+  background: #182725;
+}
+.storage-card > small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.storage-card dl {
+  margin: 8px 0;
+}
+.visibility-disclosure .topology-summary {
+  margin: 16px 0 0;
 }
 @media (max-width: 780px) {
   .live-workspace .live-house-panel {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { buildHabitatLayout, sceneHighlights } from '../src/habitatLayout.ts'
+import { podStorage, sceneObjectIds, storageFacts } from '../src/habitatView.ts'
 
 function resource(kind, id, fields = {}) {
   return {
@@ -154,4 +155,118 @@ test('an orphan container remains inspectable without inventing its parent pod',
   assert.equal(layout.pods.length, 0)
   assert.equal(layout.looseContainers.length, 1)
   assert.ok(layout.waiting)
+})
+
+test('overview hides storage and networking internals without losing service-to-pod routing', () => {
+  const p = pod('api', 'a')
+  const service = resource('Service', 'gateway', { name: 'api', namespace: 'shop' })
+  const slice = resource('EndpointSlice', 'routes', {
+    namespace: 'shop',
+    links: [
+      { kind: 'Service', name: 'api', namespace: 'shop', relation: 'service endpoints' },
+      { kind: 'Pod', uid: p.uid, name: p.name, namespace: 'shop', relation: 'ready endpoint' },
+    ],
+  })
+  const extra = Array.from({ length: 40 }, (_, i) => resource('PersistentVolume', `disk-${i}`))
+  const resources = [node('a'), p, container(p.id), service, slice, ...extra]
+  const objectIds = sceneObjectIds(
+    resources,
+    { network: false, storage: false, capacity: false },
+    null,
+  )
+  const layout = buildHabitatLayout(resources, { objectIds })
+  const baseline = buildHabitatLayout([node('a'), p, container(p.id), service])
+  assert.deepEqual(
+    layout.objects.map((o) => o.resource.id),
+    [service.id],
+  )
+  assert.equal(layout.width, baseline.width)
+  assert.equal(layout.depth, baseline.depth)
+  assert.equal(layout.pods[0].containers.length, 1)
+  assert.ok(layout.edges.some((e) => e.from === service.id && e.to === p.id))
+})
+
+test('storage selection follows only the chosen pod attachments and their exact claim chain', () => {
+  const a = pod('a', 'n'),
+    b = pod('b', 'n')
+  const first = resource('Volume', 'a/data', {
+    name: 'data',
+    parent: a.id,
+    namespace: 'shop',
+    links: [
+      { kind: 'PersistentVolumeClaim', name: 'shared', namespace: 'shop', relation: 'claim' },
+    ],
+  })
+  const second = resource('Volume', 'b/data', {
+    name: 'data',
+    parent: b.id,
+    namespace: 'shop',
+    links: [{ kind: 'PersistentVolumeClaim', name: 'other', namespace: 'shop', relation: 'claim' }],
+  })
+  const claim = resource('PersistentVolumeClaim', 'wanted', {
+    name: 'shared',
+    namespace: 'shop',
+    links: [{ kind: 'PersistentVolume', name: 'disk', uid: 'disk-uid', relation: 'bound volume' }],
+  })
+  const sameName = resource('PersistentVolumeClaim', 'wrong-namespace', {
+    name: 'shared',
+    namespace: 'other',
+  })
+  const disk = resource('PersistentVolume', 'disk-uid', { name: 'disk' })
+  const resources = [a, b, first, second, claim, sameName, disk]
+  assert.deepEqual([...podStorage(resources, a.id)].sort(), ['a/data', 'disk-uid', 'wanted'])
+  const ids = sceneObjectIds(resources, { network: false, storage: true, capacity: false }, a.id)
+  assert.ok(!ids.has(second.id))
+  assert.ok(!ids.has(sameName.id))
+  const replacedDisk = resource('PersistentVolume', 'new-disk', { name: 'disk' })
+  assert.ok(
+    !podStorage([...resources.filter((r) => r.id !== disk.id), replacedDisk], a.id).has(
+      replacedDisk.id,
+    ),
+  )
+})
+
+test('storage labels distinguish PVC requests and capacity from explicit volume limits', () => {
+  const claim = resource('PersistentVolumeClaim', 'claim', {
+    name: 'data',
+    namespace: 'shop',
+    details: { 'requested storage': '64Mi', 'capacity storage': '128Mi' },
+  })
+  const volume = resource('Volume', 'pod/data', {
+    parent: 'pod',
+    name: 'data',
+    namespace: 'shop',
+    links: [{ kind: 'PersistentVolumeClaim', name: 'data', namespace: 'shop', relation: 'claim' }],
+  })
+  const facts = storageFacts([claim, volume], volume)
+  assert.equal(facts.minimum, '64Mi')
+  assert.equal(facts.capacity, '128Mi')
+  assert.equal(facts.maximum, 'Not declared')
+  assert.equal(storageFacts([volume], volume).minimum, 'Not observed')
+  const memory = resource('Volume', 'pod/cache', {
+    name: 'cache',
+    details: { type: 'emptyDir', medium: 'Memory', 'size limit': '16Mi' },
+  })
+  assert.equal(storageFacts([memory], memory).maximum, '16Mi')
+  assert.equal(storageFacts([memory], memory).minimum, 'Not declared')
+  assert.equal(storageFacts([memory], memory).capacity, 'Not observed')
+})
+
+test('namespace selection highlights its services and workloads across nodes, excluding other namespaces', () => {
+  const ns = resource('Namespace', 'ns', { name: 'shop' })
+  const service = resource('Service', 'shop-service', { namespace: 'shop' })
+  const other = resource('Service', 'other-service', { namespace: 'other' })
+  const layout = buildHabitatLayout([
+    node('a'),
+    node('b'),
+    ns,
+    pod('first', 'a'),
+    pod('second', 'b'),
+    service,
+    other,
+  ])
+  const ids = sceneHighlights(layout, ns.id, [])
+  assert.ok(ids.has(service.id))
+  assert.ok(ids.has('Pod:first') && ids.has('Pod:second'))
+  assert.ok(!ids.has(other.id))
 })

@@ -1,9 +1,17 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { liveKinds, useClusterSnapshot } from './useClusterSnapshot'
 import type { LiveKind, LiveResource } from './useClusterSnapshot'
 import { buildHabitatLayout, namespaceColor } from './habitatLayout'
 import { SceneBoundary } from './SceneBoundary'
 import { policyCheck } from './networkPolicy'
+import {
+  overviewKinds,
+  storageKinds,
+  networkKinds,
+  podStorage,
+  sceneObjectIds,
+  storageFacts,
+} from './habitatView'
 
 const LiveHabitatScene = lazy(() =>
   import('./LiveHabitatScene').then((module) => ({ default: module.LiveHabitatScene })),
@@ -39,7 +47,9 @@ export function LiveInventory() {
   const [namespace, setNamespace] = useState('All')
   const [paused, setPaused] = useState(false)
   const [focusRevision, setFocusRevision] = useState(0)
-  const [layers, setLayers] = useState({ network: true, storage: true, capacity: true })
+  const housePanel = useRef<HTMLElement>(null)
+  const [layers, setLayers] = useState({ network: false, storage: false, capacity: false })
+  const [storagePod, setStoragePod] = useState<string | null>(null)
   const [sourceId, setSourceId] = useState('')
   const [destinationId, setDestinationId] = useState('')
   const [networkPort, setNetworkPort] = useState(80)
@@ -53,6 +63,15 @@ export function LiveInventory() {
     media.addEventListener('change', change)
     return () => media.removeEventListener('change', change)
   }, [])
+  useEffect(() => {
+    if (focusRevision === 0 || !housePanel.current) return
+    const top = housePanel.current.getBoundingClientRect().top
+    if (top < 0 || top > window.innerHeight * 0.3)
+      housePanel.current.scrollIntoView({
+        block: 'start',
+        behavior: reducedMotion ? 'instant' : 'smooth',
+      })
+  }, [focusRevision, reducedMotion])
   const snapshot = live.snapshot
   const allResources = snapshot?.resources ?? emptyResources
   const resources = useMemo(
@@ -72,11 +91,22 @@ export function LiveInventory() {
       ),
     ),
   ].sort()
-  const layout = useMemo(() => buildHabitatLayout(resources), [resources])
+  const objectIds = useMemo(
+    () => sceneObjectIds(resources, layers, storagePod),
+    [resources, layers, storagePod],
+  )
+  const layout = useMemo(() => buildHabitatLayout(resources, { objectIds }), [resources, objectIds])
   const current = resources.find((r) => r.id === selected)
+  const attachedStorage = storagePod ? podStorage(resources, storagePod) : null
   const visible = resources.filter(
     (r) =>
       (kind === 'All' || r.kind === kind) &&
+      (query !== '' ||
+        kind !== 'All' ||
+        overviewKinds.includes(r.kind) ||
+        objectIds.has(r.id) ||
+        r.id === selected) &&
+      (!attachedStorage || !storageKinds.includes(r.kind) || attachedStorage.has(r.id)) &&
       `${r.name} ${r.namespace ?? ''} ${r.nodeName ?? ''} ${r.kind}`
         .toLowerCase()
         .includes(query.toLowerCase()),
@@ -101,6 +131,23 @@ export function LiveInventory() {
   const signal = (r: LiveResource) =>
     !fresh(r) || r.state === 'Unknown' ? 'unknown' : warning(r) ? 'warning' : 'ready'
   const select = (id: string) => {
+    const resource = allResources.find((r) => r.id === id)
+    if (resource?.kind === 'Namespace') {
+      setNamespace(resource.name)
+      setStoragePod(null)
+      setLayers({ network: false, storage: false, capacity: false })
+    } else if (resource?.namespace && namespace !== 'All' && resource.namespace !== namespace) {
+      setNamespace(resource.namespace)
+    }
+    if (resource && storageKinds.includes(resource.kind)) {
+      setLayers((value) => ({ ...value, storage: true }))
+      if (resource.kind === 'Volume') setStoragePod(resource.parent ?? null)
+      else if (storagePod && !podStorage(allResources, storagePod).has(resource.id))
+        setStoragePod(null)
+    }
+    if (resource && networkKinds.includes(resource.kind))
+      setLayers((value) => ({ ...value, network: true }))
+    if (resource?.kind === 'Pod' && layers.storage) setStoragePod(resource.id)
     setSelected(id)
     setKind('All')
     setQuery('')
@@ -109,6 +156,27 @@ export function LiveInventory() {
   const reset = () => {
     setKind('All')
     setSelected(null)
+    setQuery('')
+    setStoragePod(null)
+    setLayers({ network: false, storage: false, capacity: false })
+    setSourceId('')
+    setDestinationId('')
+    setFocusRevision((n) => n + 1)
+  }
+  const filterKind = (value: LiveKind | 'All') => {
+    setKind(value)
+    setSelected(null)
+    setStoragePod(null)
+    if (value !== 'All' && storageKinds.includes(value))
+      setLayers((layers) => ({ ...layers, storage: true }))
+    if (value !== 'All' && networkKinds.includes(value))
+      setLayers((layers) => ({ ...layers, network: true }))
+    setFocusRevision((n) => n + 1)
+  }
+  const showPodStorage = (podId: string) => {
+    setStoragePod(podId)
+    setLayers((value) => ({ ...value, storage: true }))
+    setKind('Volume')
     setQuery('')
     setFocusRevision((n) => n + 1)
   }
@@ -119,12 +187,12 @@ export function LiveInventory() {
           <span className="eyebrow">LIVE KUBERNETES HABITAT / READ ONLY</span>
           <h1>{snapshot?.cluster ?? 'Connect your habitat.'}</h1>
           <p>
-            The house follows your cluster. Each observed node has a room; each pod holds its actual
-            containers. The layout expands and contracts as workloads change.
+            Your running cluster: nodes, namespaces, pods and services. Select a component to
+            explore its storage, networking and resource details.
           </p>
         </div>
         <div className="demo-counts">
-          {(['Node', 'Pod', 'Container'] as const).map((k) => (
+          {(['Node', 'Pod', 'Service'] as const).map((k) => (
             <div key={k}>
               <strong>{resources.filter((r) => r.kind === k).length}</strong>
               <span>{k === 'Node' ? 'Node rooms' : `${k}s in view`}</span>
@@ -206,30 +274,33 @@ export function LiveInventory() {
           ))}
         </div>
       </details>
-      <section className="topology-summary" aria-label="Observation coverage">
-        <div>
-          <strong>Network</strong>
-          <span>
-            {resources.filter((r) => r.kind === 'Service').length} services ·{' '}
-            {resources.filter((r) => r.kind === 'NetworkPolicy').length} policies
-          </span>
-          <small>Configured relationships · traffic telemetry unavailable</small>
-        </div>
-        <div>
-          <strong>Storage</strong>
-          <span>
-            {resources.filter((r) => r.kind === 'Volume').length} pod volumes ·{' '}
-            {resources.filter((r) => r.kind === 'PersistentVolumeClaim').length} namespace claims ·{' '}
-            {resources.filter((r) => r.kind === 'PersistentVolume').length} cluster volumes
-          </span>
-          <small>Capacity and references · disk usage unavailable</small>
-        </div>
-        <div>
-          <strong>CPU & memory</strong>
-          <span>{snapshot?.metrics?.state ?? 'unavailable'}</span>
-          <small>{snapshot?.metrics?.reason ?? 'No Metrics API observations'}</small>
-        </div>
-      </section>
+      <details className="visibility-disclosure">
+        <summary>Storage, networking and resource coverage</summary>
+        <section className="topology-summary" aria-label="Observation coverage">
+          <div>
+            <strong>Network</strong>
+            <span>
+              {resources.filter((r) => r.kind === 'Service').length} services ·{' '}
+              {resources.filter((r) => r.kind === 'NetworkPolicy').length} policies
+            </span>
+            <small>Configured relationships · traffic telemetry unavailable</small>
+          </div>
+          <div>
+            <strong>Storage</strong>
+            <span>
+              {resources.filter((r) => r.kind === 'Volume').length} pod volumes ·{' '}
+              {resources.filter((r) => r.kind === 'PersistentVolumeClaim').length} namespace claims
+              · {resources.filter((r) => r.kind === 'PersistentVolume').length} cluster volumes
+            </span>
+            <small>Capacity and references · disk usage unavailable</small>
+          </div>
+          <div>
+            <strong>CPU & memory</strong>
+            <span>{snapshot?.metrics?.state ?? 'unavailable'}</span>
+            <small>{snapshot?.metrics?.reason ?? 'No Metrics API observations'}</small>
+          </div>
+        </section>
+      </details>
       <div className="workspace live-workspace">
         <aside className="inventory" aria-label="Live resource inventory">
           <div className="panel-heading">
@@ -269,29 +340,62 @@ export function LiveInventory() {
           <input
             id="live-search"
             type="search"
-            placeholder="Name, namespace or node…"
+            placeholder="Pod, service or component name…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
           <div className="kind-filters" aria-label="Live resource kinds">
-            {(['All', ...liveKinds] as const).map((k) => (
+            {(['All', ...overviewKinds] as const).map((k) => (
               <button
                 key={k}
                 className={k === kind ? 'active' : ''}
                 aria-pressed={k === kind}
-                onClick={() => {
-                  setKind(k)
-                  setSelected(null)
-                  setFocusRevision((n) => n + 1)
-                }}
+                onClick={() => filterKind(k)}
               >
-                {k === 'All' ? 'Everything' : (kindLabels[k] ?? `${k}s`)}
+                {k === 'All' ? 'Overview' : (kindLabels[k] ?? `${k}s`)}
                 <span>
-                  {k === 'All' ? resources.length : resources.filter((r) => r.kind === k).length}
+                  {k === 'All'
+                    ? resources.filter((r) => overviewKinds.includes(r.kind)).length
+                    : resources.filter((r) => r.kind === k).length}
                 </span>
               </button>
             ))}
           </div>
+          <details
+            className="component-disclosure"
+            open={kind !== 'All' && !overviewKinds.includes(kind)}
+          >
+            <summary>More components</summary>
+            <div className="kind-filters advanced-kind-filters">
+              {liveKinds
+                .filter((k) => !overviewKinds.includes(k))
+                .map((k) => (
+                  <button
+                    key={k}
+                    className={k === kind ? 'active' : ''}
+                    aria-pressed={k === kind}
+                    onClick={() => filterKind(k)}
+                  >
+                    {kindLabels[k] ?? `${k}s`}{' '}
+                    <span>{resources.filter((r) => r.kind === k).length}</span>
+                  </button>
+                ))}
+            </div>
+          </details>
+          {storagePod && layers.storage && (
+            <div className="storage-scope" role="status">
+              Storage for {resources.find((r) => r.id === storagePod)?.name ?? 'selected pod'}
+              <button
+                className="text-link"
+                onClick={() => {
+                  setStoragePod(null)
+                  setKind('Volume')
+                }}
+              >
+                Show all pod storage
+              </button>
+            </div>
+          )}
           <div className="resource-list">
             {visible.map((r) => (
               <button
@@ -328,11 +432,11 @@ export function LiveInventory() {
             )}
           </div>
           <div className="inventory-footer">
-            Containers come from their parent pod. No Secret payloads or environment variables are
-            exposed.
+            Select a namespace to enter it. More components appear when requested.
           </div>
         </aside>
         <section
+          ref={housePanel}
           className="scene-panel live-house-panel"
           aria-label="Live cluster house"
           data-node-count={layout.rooms.length}
@@ -340,6 +444,14 @@ export function LiveInventory() {
           data-container-count={resources.filter((r) => r.kind === 'Container').length}
           data-layout-width={layout.width}
           data-layout-depth={layout.depth}
+          data-service-count={resources.filter((r) => r.kind === 'Service').length}
+          data-storage-object-count={
+            layout.objects.filter((o) => storageKinds.includes(o.resource.kind)).length
+          }
+          data-network-detail-count={
+            layout.objects.filter((o) => networkKinds.includes(o.resource.kind)).length
+          }
+          data-namespace-scope={namespace}
         >
           <div className="scene-toolbar">
             <div>
@@ -356,13 +468,17 @@ export function LiveInventory() {
                 key={layer}
                 className="subtle-button"
                 aria-pressed={layers[layer]}
-                onClick={() => setLayers((value) => ({ ...value, [layer]: !value[layer] }))}
+                onClick={() => {
+                  if (layer === 'storage' && !layers.storage)
+                    setStoragePod(current?.kind === 'Pod' ? current.id : (current?.parent ?? null))
+                  setLayers((value) => ({ ...value, [layer]: !value[layer] }))
+                }}
               >
                 {layer === 'capacity'
                   ? 'CPU & memory'
                   : layer === 'storage'
-                    ? 'Storage'
-                    : 'Networking'}
+                    ? 'Show storage'
+                    : 'Advanced networking'}
               </button>
             ))}
           </div>
@@ -385,6 +501,13 @@ export function LiveInventory() {
                     fresh={fresh}
                     onSelect={select}
                     layers={layers}
+                    overview={!selected && kind === 'All' && query === ''}
+                    endpointsFresh={
+                      !live.stale &&
+                      snapshot.visibility.some(
+                        (v) => v.kind === 'EndpointSlice' && v.state === 'observing',
+                      )
+                    }
                     policyEdge={
                       networkResult && source && destination
                         ? { from: source.id, to: destination.id, verdict: networkResult.verdict }
@@ -422,6 +545,8 @@ export function LiveInventory() {
             {snapshot && (live.stale || snapshot.connection !== 'connected')
               ? ' · some observations retained; check freshness'
               : ''}
+            {' · '}
+            {resources.filter((r) => r.kind === 'Service').length} services
           </div>
           <div className="scene-footer">
             <div className="scene-legend">
@@ -459,8 +584,8 @@ export function LiveInventory() {
                   key={name}
                   className="text-link"
                   onClick={() => {
-                    const ns = resources.find((r) => r.kind === 'Namespace' && r.name === name)
-                    if (ns) select(ns.id)
+                    setNamespace(name)
+                    reset()
                   }}
                 >
                   <i style={{ background: namespaceColor(name) }} />
@@ -473,75 +598,81 @@ export function LiveInventory() {
             not CPU or memory capacity. Healthy motion requires fresh Pod Ready observations.
           </p>
           <p className="scope-note scene-note">
-            Blue lines show configured network references; gold lines show storage references. Lines
-            represent configuration, not measured traffic. Disk cylinders are volumes; gateways are
-            services; purple panels are network policies.
+            Services are labeled gateways. Blue links show their configured pod destinations, not
+            measured traffic. Reveal storage or advanced networking when you need them.
           </p>
-          <section className="network-check" aria-label="Pod network policy check">
-            <h3>Pod → pod policy check</h3>
-            <div className="network-inputs">
-              <label>
-                Source pod
-                <select
-                  aria-label="Source pod"
-                  value={sourceId}
-                  onChange={(e) => setSourceId(e.target.value)}
-                >
-                  <option value="">Select source…</option>
-                  {pods.map((pod) => (
-                    <option key={pod.id} value={pod.id}>
-                      {pod.namespace}/{pod.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Destination pod
-                <select
-                  aria-label="Destination pod"
-                  value={destinationId}
-                  onChange={(e) => setDestinationId(e.target.value)}
-                >
-                  <option value="">Select destination…</option>
-                  {pods.map((pod) => (
-                    <option key={pod.id} value={pod.id}>
-                      {pod.namespace}/{pod.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Port
-                <input
-                  type="number"
-                  aria-label="Destination port"
-                  min={1}
-                  max={65535}
-                  value={networkPort}
-                  onChange={(e) => setNetworkPort(Number(e.target.value))}
-                />
-              </label>
-              <label>
-                Protocol
-                <select
-                  aria-label="Network protocol"
-                  value={protocol}
-                  onChange={(e) => setProtocol(e.target.value)}
-                >
-                  {['TCP', 'UDP', 'SCTP'].map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p role="status" className="policy-verdict">
-              {networkResult?.verdict ?? 'Select two observed pods to inspect declared policy.'}
-            </p>
-            <p className="scope-note">
-              {networkResult?.explanation ??
-                'Checks source egress and destination ingress. Actual connectivity and CNI enforcement need separate evidence.'}
-            </p>
-          </section>
+          {layers.network && (
+            <section className="network-check" aria-label="Pod network policy check">
+              <p className="scope-note">
+                A Service is the entry point to its pods. EndpointSlices record its destinations.
+                Ingress defines incoming routes to Services. Network policies describe allowed
+                connections.
+              </p>
+              <h3>Pod → pod policy check</h3>
+              <div className="network-inputs">
+                <label>
+                  Source pod
+                  <select
+                    aria-label="Source pod"
+                    value={sourceId}
+                    onChange={(e) => setSourceId(e.target.value)}
+                  >
+                    <option value="">Select source…</option>
+                    {pods.map((pod) => (
+                      <option key={pod.id} value={pod.id}>
+                        {pod.namespace}/{pod.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Destination pod
+                  <select
+                    aria-label="Destination pod"
+                    value={destinationId}
+                    onChange={(e) => setDestinationId(e.target.value)}
+                  >
+                    <option value="">Select destination…</option>
+                    {pods.map((pod) => (
+                      <option key={pod.id} value={pod.id}>
+                        {pod.namespace}/{pod.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Port
+                  <input
+                    type="number"
+                    aria-label="Destination port"
+                    min={1}
+                    max={65535}
+                    value={networkPort}
+                    onChange={(e) => setNetworkPort(Number(e.target.value))}
+                  />
+                </label>
+                <label>
+                  Protocol
+                  <select
+                    aria-label="Network protocol"
+                    value={protocol}
+                    onChange={(e) => setProtocol(e.target.value)}
+                  >
+                    {['TCP', 'UDP', 'SCTP'].map((v) => (
+                      <option key={v}>{v}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <p role="status" className="policy-verdict">
+                {networkResult?.verdict ?? 'Select two observed pods to inspect declared policy.'}
+              </p>
+              <p className="scope-note">
+                {networkResult?.explanation ??
+                  'Checks source egress and destination ingress. Actual connectivity and CNI enforcement need separate evidence.'}
+              </p>
+            </section>
+          )}
         </section>
         <aside className="details" aria-label="Live component details" aria-live="polite">
           <div className="panel-heading">
@@ -561,54 +692,58 @@ export function LiveInventory() {
                   verdict.
                 </p>
               )}
-              <dl>
-                {(
-                  [
-                    ['UID', current.uid],
-                    ['Resource version', current.resourceVersion],
-                    ['Observed at', stamp(current.observedAt)],
-                    ['Namespace', current.namespace],
-                    ['Assigned node', current.nodeName],
-                    ['Pod phase', current.phase],
+              <details className="identity-disclosure">
+                <summary>Identity, placement &amp; observation</summary>
+                <dl>
+                  {(
                     [
-                      current.kind === 'Container' ? 'Container ready' : 'Ready condition',
-                      current.kind === 'Namespace'
-                        ? undefined
-                        : current.ready === undefined
-                          ? 'Unknown'
-                          : String(current.ready),
-                    ],
-                    ['Container type', current.containerType],
-                    ['Restart count', current.restartCount],
-                    ['Waiting / termination reason', current.reason],
-                    ['Exit code', current.exitCode],
-                    ['Deletion requested', current.deleting ? 'Yes' : undefined],
-                  ] as const
-                ).map(
-                  ([label, value]) =>
-                    value !== undefined && (
-                      <div key={label}>
-                        <dt>{label}</dt>
-                        <dd className={label === 'UID' ? 'mono' : ''}>{value}</dd>
-                      </div>
-                    ),
-                )}
-                {current.parent && (
-                  <div>
-                    <dt>Parent pod</dt>
-                    <dd>
-                      <button className="text-link" onClick={() => select(current.parent!)}>
-                        {resources.find((r) => r.id === current.parent)?.name ?? current.parent}
-                      </button>
-                    </dd>
-                  </div>
-                )}
-              </dl>
+                      ['UID', current.uid],
+                      ['Object ID', current.id],
+                      ['Resource version', current.resourceVersion],
+                      ['Observed at', stamp(current.observedAt)],
+                      ['Namespace', current.namespace],
+                      ['Assigned node', current.nodeName],
+                      [current.kind === 'Pod' ? 'Pod phase' : 'Phase', current.phase],
+                      [
+                        current.kind === 'Container' ? 'Container ready' : 'Ready condition',
+                        !['Node', 'Pod', 'Container'].includes(current.kind)
+                          ? undefined
+                          : current.ready === undefined
+                            ? 'Unknown'
+                            : String(current.ready),
+                      ],
+                      ['Container type', current.containerType],
+                      ['Restart count', current.restartCount],
+                      ['Waiting / termination reason', current.reason],
+                      ['Exit code', current.exitCode],
+                      ['Deletion requested', current.deleting ? 'Yes' : undefined],
+                    ] as const
+                  ).map(
+                    ([label, value]) =>
+                      value !== undefined && (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd className={label === 'UID' ? 'mono' : ''}>{value}</dd>
+                        </div>
+                      ),
+                  )}
+                  {current.parent && (
+                    <div>
+                      <dt>Parent pod</dt>
+                      <dd>
+                        <button className="text-link" onClick={() => select(current.parent!)}>
+                          {resources.find((r) => r.id === current.parent)?.name ?? current.parent}
+                        </button>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </details>
               {current.kind === 'Pod' && (
                 <section className="relationship-list">
                   <h4>Inside this pod</h4>
                   {resources
-                    .filter((r) => r.parent === current.id)
+                    .filter((r) => r.parent === current.id && r.kind === 'Container')
                     .map((child) => (
                       <div key={child.id}>
                         <small>
@@ -618,6 +753,121 @@ export function LiveInventory() {
                         </small>
                         <button className="text-link" onClick={() => select(child.id)}>
                           {child.name}
+                        </button>
+                      </div>
+                    ))}
+                </section>
+              )}
+              {current.kind === 'Pod' && (
+                <section className="pod-storage-details">
+                  <h4>Storage attached to this pod</h4>
+                  <button className="subtle-button" onClick={() => showPodStorage(current.id)}>
+                    Explore this pod’s storage
+                  </button>
+                  {resources
+                    .filter((r) => r.kind === 'Volume' && r.parent === current.id)
+                    .map((volume) => {
+                      const facts = storageFacts(allResources, volume)
+                      return (
+                        <div className="storage-card" key={volume.id}>
+                          <button className="text-link" onClick={() => select(volume.id)}>
+                            {volume.name}
+                          </button>
+                          <small>
+                            {facts.type}
+                            {facts.medium ? ` · ${facts.medium}` : ''}
+                          </small>
+                          <dl>
+                            <div>
+                              <dt>Min requested</dt>
+                              <dd>{facts.minimum}</dd>
+                            </div>
+                            <div>
+                              <dt>Capacity</dt>
+                              <dd>{facts.capacity}</dd>
+                            </div>
+                            <div>
+                              <dt>Max limit</dt>
+                              <dd>{facts.maximum}</dd>
+                            </div>
+                          </dl>
+                          <small>ID: {facts.shortId}</small>
+                          {facts.claim && (
+                            <button className="text-link" onClick={() => select(facts.claim!.id)}>
+                              Claim: {facts.claim.name}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  {!resources.some((r) => r.kind === 'Volume' && r.parent === current.id) && (
+                    <p className="scope-note">
+                      No volume attachments observed. Container writable layers are separate from
+                      pod volumes.
+                    </p>
+                  )}
+                  <p className="scope-note">
+                    Min requested is a PVC allocation request. Capacity is provisioned size. Max is
+                    shown only when an explicit volume limit exists. Usage is not measured here.
+                  </p>
+                </section>
+              )}
+              {current.kind === 'Service' && (
+                <section className="relationship-list">
+                  <h4>Configured pod destinations</h4>
+                  <p className="scope-note">
+                    This gateway gives its pods a stable entry point. Destinations come from
+                    EndpointSlices; this does not prove application traffic.
+                  </p>
+                  {layout.edges
+                    .filter(
+                      (edge) =>
+                        edge.from === current.id &&
+                        allResources.find((r) => r.id === edge.to)?.kind === 'Pod',
+                    )
+                    .map((edge) => {
+                      const pod = allResources.find((r) => r.id === edge.to)!
+                      return (
+                        <div key={edge.to}>
+                          <button className="text-link" onClick={() => select(pod.id)}>
+                            {pod.name}
+                          </button>
+                          <small>
+                            {fresh(current) &&
+                            fresh(pod) &&
+                            snapshot?.visibility.some(
+                              (v) => v.kind === 'EndpointSlice' && v.state === 'observing',
+                            )
+                              ? edge.relation
+                              : 'Destination freshness unknown'}
+                          </small>
+                        </div>
+                      )
+                    })}
+                  {!layout.edges.some(
+                    (edge) =>
+                      edge.from === current.id &&
+                      allResources.find((r) => r.id === edge.to)?.kind === 'Pod',
+                  ) && (
+                    <p className="scope-note">
+                      No pod destinations observed. A service can target external endpoints or have
+                      no ready pod backends.
+                    </p>
+                  )}
+                </section>
+              )}
+              {current.kind === 'Namespace' && (
+                <section className="relationship-list">
+                  <h4>Inside this namespace</h4>
+                  {resources
+                    .filter(
+                      (r) => r.namespace === current.name && ['Pod', 'Service'].includes(r.kind),
+                    )
+                    .map((r) => (
+                      <div key={r.id}>
+                        <small>{r.kind}</small>
+                        <button className="text-link" onClick={() => select(r.id)}>
+                          {r.name}
                         </button>
                       </div>
                     ))}
@@ -726,8 +976,9 @@ export function LiveInventory() {
               <div className="evidence-note">
                 <strong>Source: Kubernetes API</strong>
                 <p>
-                  Pod Ready, container state and application health are different. A container
-                  restart retains its pod UID; a replacement has a new UID.
+                  {['Pod', 'Container'].includes(current.kind)
+                    ? 'Pod readiness, container state and application health are different. A container restart retains its pod UID; a replacement has a new UID.'
+                    : 'These are observed Kubernetes objects. Configuration and capacity do not prove application health or measured resource usage.'}
                 </p>
               </div>
             </>

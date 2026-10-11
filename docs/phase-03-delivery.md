@@ -41,7 +41,30 @@ observation with unknown freshness. Investigating that instability remains accep
 
 The full automated browser suite remains unverified locally; manual checks do not substitute for it.
 
-## Open acceptance work
+## Focused overview refinement on 2026-10-11
+
+The default scene now shows nodes, namespaces, pods and labelled Services. Storage, advanced
+networking and capacity layers open on request. Namespace selection scopes its workloads and
+Services across nodes. Pod inspection lists its containers and existing attachments, and storage
+exploration follows only that pod's volume/claim/PV/class chain. Selection remains read-only.
+
+Storage bodies display identities and separate allocation requests, observed capacities and explicit
+limits. The inspector distinguishes missing declarations from unobserved claims. StorageClasses and
+namespace quotas retain their different meanings. See the animated
+[focused exploration guide](assets/focused-exploration.svg).
+
+TypeScript and the production build pass. All 21 layout/policy tests pass, including hidden-layer
+geometry, attachment identity, storage semantics and namespace membership. A browser regression
+scenario was added for the default overview, namespace selection and pod-specific storage; it is
+listed successfully but has not been executed locally because browser launch remains restricted.
+
+Earlier manual review confirmed the core component list and namespace scope, Service destinations,
+and the shared pod's three containers, 64 Mi claim and 16 Mi memory-backed volume. The old preview
+later retained stale observations after its credential expired. Restarting on port 19094 collided
+with an existing process. Fresh preview verification of this refinement remains pending on the
+regular-terminal launcher; no current health verdict is inferred from the cached review.
+
+## Remaining acceptance work
 
 Refine house artwork with the user; verify camera and keyboard navigation across further cluster
 sizes; complete denied access/outage/recovery lab scenarios. Later-phase telemetry,

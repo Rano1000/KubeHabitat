@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { namespaceColor, sceneHighlights } from './habitatLayout'
 import type { HabitatLayout, PlacedPod, Point } from './habitatLayout'
 import type { LiveResource } from './useClusterSnapshot'
+import { storageFacts } from './habitatView'
 
 type Props = {
   layout: HabitatLayout
@@ -17,6 +18,8 @@ type Props = {
   onSelect: (id: string) => void
   layers: { network: boolean; storage: boolean; capacity: boolean }
   policyEdge?: { from: string; to: string; verdict: string }
+  overview?: boolean
+  endpointsFresh: boolean
 }
 
 function Connector({ from, to, tint }: { from: Point; to: Point; tint: string }) {
@@ -52,7 +55,8 @@ function Infrastructure({
   highlighted: boolean
 }) {
   const storage = !networkKinds.has(resource.kind)
-  if (storage ? !props.layers.storage : !props.layers.network) return null
+  if (storage ? !props.layers.storage : resource.kind !== 'Service' && !props.layers.network)
+    return null
   const tint = !props.fresh(resource)
     ? '#8594a6'
     : resource.kind === 'NetworkPolicy'
@@ -67,8 +71,12 @@ function Infrastructure({
   return (
     <group position={position}>
       <mesh onClick={choose}>
-        {resource.kind === 'Volume' ? (
+        {resource.kind === 'Service' ? (
+          <cylinderGeometry args={[0.42, 0.5, 0.28, 6]} />
+        ) : resource.kind === 'Volume' ? (
           <cylinderGeometry args={[0.17, 0.17, 0.22, 16]} />
+        ) : ['StorageClass', 'ResourceQuota'].includes(resource.kind) ? (
+          <boxGeometry args={[0.7, 0.8, 0.18]} />
         ) : storage ? (
           <cylinderGeometry args={[0.42, 0.42, 0.75, 20]} />
         ) : resource.kind === 'NetworkPolicy' ? (
@@ -85,9 +93,65 @@ function Infrastructure({
           metalness={0.35}
         />
       </mesh>
-      {props.selected === resource.id && (
-        <Label text={`${resource.kind} · ${resource.name}`} position={[0, 0.9, 0]} width={3.4} />
+      {resource.kind === 'Service' && (
+        <>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.28, 0]} onClick={choose}>
+            <torusGeometry args={[0.36, 0.035, 8, 24]} />
+            <meshBasicMaterial color={tint} />
+          </mesh>
+          <Label
+            text={`SERVICE · ${resource.name}\n${
+              props.endpointsFresh &&
+              props.fresh(resource) &&
+              props.layout.resources
+                .filter(
+                  (r) =>
+                    r.kind === 'EndpointSlice' &&
+                    r.namespace === resource.namespace &&
+                    r.links?.some((l) => l.kind === 'Service' && l.name === resource.name),
+                )
+                .every(props.fresh)
+                ? `Pod destinations: ${new Set(props.layout.edges.filter((edge) => edge.from === resource.id && props.layout.resources.find((r) => r.id === edge.to)?.kind === 'Pod').map((edge) => edge.to)).size}`
+                : 'Destination freshness unknown'
+            }`}
+            position={[0, 1, 0]}
+            width={3.1}
+            onClick={choose}
+          />
+        </>
       )}
+      {storage &&
+        ['Volume', 'PersistentVolumeClaim', 'PersistentVolume'].includes(resource.kind) &&
+        (() => {
+          const facts = storageFacts(props.layout.resources, resource)
+          return (
+            <Label
+              text={`${resource.name}\nID ${facts.shortId}\nMin requested: ${facts.minimum}\nCapacity: ${facts.capacity}\nMax limit: ${facts.maximum}`}
+              position={[0, resource.kind === 'Volume' ? 0.85 : 1.3, 0]}
+              width={2.25}
+              onClick={choose}
+            />
+          )
+        })()}
+      {['StorageClass', 'ResourceQuota'].includes(resource.kind) && (
+        <Label
+          text={`${resource.kind === 'StorageClass' ? 'STORAGE CLASS' : 'NAMESPACE QUOTA'} · ${resource.name}\nID ${resource.uid.slice(0, 8)}\n${resource.kind === 'StorageClass' ? 'Min / max: not defined by class' : `Storage quota: ${resource.details?.['quota requests.storage'] ?? 'Not declared'}`}`}
+          position={[0, 1.2, 0]}
+          width={2.8}
+          onClick={choose}
+        />
+      )}
+      {props.selected === resource.id &&
+        resource.kind !== 'Service' &&
+        ![
+          'Volume',
+          'PersistentVolumeClaim',
+          'PersistentVolume',
+          'StorageClass',
+          'ResourceQuota',
+        ].includes(resource.kind) && (
+          <Label text={`${resource.kind} · ${resource.name}`} position={[0, 0.9, 0]} width={3.4} />
+        )}
     </group>
   )
 }
@@ -116,21 +180,28 @@ function Label({
 }) {
   const texture = useMemo(() => {
     const canvas = document.createElement('canvas')
+    const lines = text.split('\n')
     canvas.width = 768
-    canvas.height = 96
+    canvas.height = lines.length === 1 ? 96 : lines.length * 54 + 24
     const ctx = canvas.getContext('2d')!
     ctx.fillStyle = '#102134e8'
-    ctx.fillRect(0, 0, 768, 96)
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.font = '500 29px system-ui'
     ctx.fillStyle = '#deebf4'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(text, 384, 48, 730)
+    lines.forEach((line, index) =>
+      ctx.fillText(line, 384, lines.length === 1 ? 48 : 39 + index * 54, 730),
+    )
     return new CanvasTexture(canvas)
   }, [text])
   useEffect(() => () => texture.dispose(), [texture])
   return (
-    <sprite position={position} scale={[width, width / 8, 1]} onClick={onClick}>
+    <sprite
+      position={position}
+      scale={[width, (width * texture.image.height) / texture.image.width, 1]}
+      onClick={onClick}
+    >
       <spriteMaterial map={texture} depthTest={false} transparent />
     </sprite>
   )
@@ -161,7 +232,14 @@ function Box({
   )
 }
 
-function CameraRig({ layout, selected, matching, focusRevision, motion }: Props) {
+function CameraRig({
+  layout,
+  selected,
+  matching,
+  focusRevision,
+  motion,
+  overview: overviewRequested,
+}: Props) {
   const { camera, gl, invalidate, size } = useThree()
   const controls = useRef<OrbitControls | null>(null)
   const moving = useRef(false)
@@ -180,7 +258,7 @@ function CameraRig({ layout, selected, matching, focusRevision, motion }: Props)
       ? [...sceneHighlights(layout, selected, [])]
       : matching
   const points = focusIds.map((id) => layout.positions.get(id)).filter((p): p is Point => !!p)
-  const overview = !selected && matching.length === layout.resources.length
+  const overview = !selected && (overviewRequested ?? matching.length === layout.resources.length)
   const center: Point =
     overview || !points.length
       ? [0, 0.8, 0]
@@ -486,7 +564,19 @@ function House(props: Props) {
             target &&
             props.fresh(source) &&
             props.fresh(target) &&
-            (networkKinds.has(source.kind) ? props.layers.network : props.layers.storage) &&
+            (source.kind === 'Service'
+              ? props.endpointsFresh &&
+                props.layout.resources
+                  .filter(
+                    (r) =>
+                      r.kind === 'EndpointSlice' &&
+                      r.namespace === source.namespace &&
+                      r.links?.some((l) => l.kind === 'Service' && l.name === source.name),
+                  )
+                  .every(props.fresh)
+              : networkKinds.has(source.kind)
+                ? props.layers.network
+                : props.layers.storage) &&
             (!props.selected || ids.has(edge.from) || ids.has(edge.to))
           )
         })

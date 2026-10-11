@@ -39,7 +39,10 @@ export function namespaceColor(name: string) {
 }
 
 // Geometry depends only on observed identities and relationships, never on authored fixtures.
-export function buildHabitatLayout(resources: LiveResource[]): HabitatLayout {
+export function buildHabitatLayout(
+  resources: LiveResource[],
+  options?: { objectIds: ReadonlySet<string> },
+): HabitatLayout {
   const nodes = ordered(resources.filter((r) => r.kind === 'Node'))
   const podResources = ordered(resources.filter((r) => r.kind === 'Pod'))
   const containers = ordered(resources.filter((r) => r.kind === 'Container'))
@@ -63,7 +66,11 @@ export function buildHabitatLayout(resources: LiveResource[]): HabitatLayout {
   const orphanContainers = containers.filter((c) => !c.parent || !podIds.has(c.parent))
   const waitingNeeded = unplaced.length > 0 || orphanContainers.length > 0
   const infrastructure = ordered(
-    resources.filter((r) => !['Node', 'Namespace', 'Pod', 'Container', 'Volume'].includes(r.kind)),
+    resources.filter(
+      (r) =>
+        !['Node', 'Namespace', 'Pod', 'Container', 'Volume'].includes(r.kind) &&
+        (!options || options.objectIds.has(r.id)),
+    ),
   )
   const infraShape = dimensions(infrastructure)
   const specifications = nodes.map((node) => {
@@ -170,6 +177,7 @@ export function buildHabitatLayout(resources: LiveResource[]): HabitatLayout {
     return { resource, position }
   })
   for (const resource of ordered(resources.filter((r) => r.kind === 'Volume'))) {
+    if (options && !options.objectIds.has(resource.id)) continue
     const parent = positions.get(resource.parent ?? '')
     if (!parent) continue
     const siblings = resources
@@ -244,6 +252,9 @@ export function sceneHighlights(
   const resource = layout.resources.find((r) => r.id === selected)
   const ids = new Set<string>([selected])
   if (!resource) return ids
+  if (resource.kind === 'Namespace')
+    for (const member of layout.resources)
+      if (member.namespace === resource.name) ids.add(member.id)
   for (const edge of layout.edges)
     if (edge.from === selected || edge.to === selected) {
       ids.add(edge.from)
@@ -254,7 +265,8 @@ export function sceneHighlights(
       (resource.kind === 'Node' && pod.resource.nodeName === resource.name) ||
       (resource.kind === 'Namespace' && pod.resource.namespace === resource.name) ||
       pod.resource.id === selected ||
-      (resource.kind === 'Container' && resource.parent === pod.resource.id)
+      (resource.kind === 'Container' && resource.parent === pod.resource.id) ||
+      (resource.kind === 'Volume' && resource.parent === pod.resource.id)
     ) {
       ids.add(pod.resource.id)
       if (resource.kind !== 'Container')

@@ -26,3 +26,7 @@ subject to their owners’ rights. KubeHabitat is not an official Kubernetes pro
 Keep diagrams editable, add descriptive alt text, and label concept art and demo data. Capture real
 screenshots only from the implemented app. Animation must communicate a state or relationship and
 support reduced motion.
+
+`focused-exploration.svg` is original source-authored KubeHabitat artwork illustrating progressive
+inspection. Its gentle highlight animation respects reduced motion. It is a workflow illustration,
+not a live cluster screenshot.

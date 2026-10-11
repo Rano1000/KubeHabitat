@@ -58,8 +58,10 @@ test('live inventory inspects real identities without substituting demo componen
   await page.goto('/#live')
   await expect(page.getByRole('heading', { name: 'test-habitat' })).toBeVisible()
   const inventory = page.getByRole('complementary', { name: 'Live resource inventory' })
-  await inventory.getByRole('button', { name: /worker Container/ }).click()
   const details = page.getByRole('complementary', { name: 'Live component details' })
+  await inventory.getByRole('button', { name: /real-worker Pod/ }).click()
+  await details.getByRole('button', { name: 'worker', exact: true }).click()
+  await details.getByText('Identity, placement & observation', { exact: true }).click()
   await expect(details.getByText('CrashLoopBackOff', { exact: true })).toBeVisible()
   await expect(details.getByText('observed-uid', { exact: true })).toBeVisible()
   await details.getByRole('button', { name: 'real-worker' }).click()
@@ -119,6 +121,10 @@ test('live inspection remains usable on a narrow screen with reduced motion', as
   await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: snapshot() }))
   await page.goto('/#live')
   await page.getByRole('button', { name: /real-worker Pod/ }).click()
+  await page
+    .getByRole('complementary', { name: 'Live component details' })
+    .getByText('Identity, placement & observation', { exact: true })
+    .click()
   await expect(
     page
       .getByRole('complementary', { name: 'Live component details' })
@@ -147,4 +153,78 @@ test('Habitat opens actual snapshots by default and keeps house counts synchroni
   current = { ...snapshot(2), resources: [] }
   await expect(house).toHaveAttribute('data-pod-count', '0', { timeout: 8000 })
   await expect(house).toHaveAttribute('data-container-count', '0')
+})
+
+test('overview hides internals and pod storage exploration follows only its attachments', async ({
+  page,
+}) => {
+  const current = snapshot()
+  const object = (kind: string, name: string, extra = {}) => ({
+    id: `${kind}:${name}`,
+    uid: name,
+    kind,
+    name,
+    namespace: 'shop',
+    resourceVersion: '1',
+    observedAt: current.generatedAt,
+    state: 'Observed',
+    ...extra,
+  })
+  current.visibility = [
+    'Node',
+    'Namespace',
+    'Pod',
+    'Service',
+    'EndpointSlice',
+    'PersistentVolumeClaim',
+    'PersistentVolume',
+    'StorageClass',
+    'ResourceQuota',
+    'Ingress',
+    'NetworkPolicy',
+  ].map((kind) => ({
+    kind,
+    state: 'observing',
+    synced: true,
+    lastSuccess: current.generatedAt,
+  }))
+  const resources = [
+    ...current.resources,
+    object('Node', 'worker-a', { namespace: undefined, state: 'Ready' }),
+    object('Namespace', 'shop', { namespace: undefined }),
+    object('Namespace', 'other', { namespace: undefined }),
+    object('Pod', 'other-pod', { namespace: 'other', nodeName: 'worker-a' }),
+    object('Service', 'checkout'),
+    object('EndpointSlice', 'checkout-backends'),
+    object('Volume', 'cache', {
+      parent: 'Pod:observed-uid',
+      details: { type: 'emptyDir', medium: 'Memory', 'size limit': '16Mi' },
+    }),
+    object('Volume', 'other-cache', { parent: 'Pod:other-pod', namespace: 'other' }),
+  ]
+  await page.route('**/api/v1/snapshot', (route) =>
+    route.fulfill({ json: { ...current, resources } }),
+  )
+  await page.goto('/#habitat')
+  const house = page.getByLabel('Live cluster house')
+  const inventory = page.getByRole('complementary', { name: 'Live resource inventory' })
+  const details = page.getByRole('complementary', { name: 'Live component details' })
+  await expect(house).toHaveAttribute('data-service-count', '1')
+  await expect(house).toHaveAttribute('data-storage-object-count', '0')
+  await expect(house).toHaveAttribute('data-network-detail-count', '0')
+  await expect(inventory.getByRole('button', { name: /checkout Service/ })).toBeVisible()
+  await expect(
+    inventory.getByRole('button', { name: /checkout-backends EndpointSlice/ }),
+  ).toHaveCount(0)
+  await inventory.getByRole('button', { name: /shop Namespace/ }).click()
+  await expect(house).toHaveAttribute('data-namespace-scope', 'shop')
+  await expect(house).toHaveAttribute('data-pod-count', '1')
+  await inventory.getByRole('button', { name: /real-worker Pod/ }).click()
+  await expect(details.getByText('16Mi', { exact: true })).toBeVisible()
+  await details.getByRole('button', { name: 'Explore this pod’s storage', exact: true }).click()
+  await expect(house).toHaveAttribute('data-storage-object-count', '1')
+  await expect(inventory.getByRole('button', { name: /other-cache Volume/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Reset view', exact: true }).click()
+  await expect(house).toHaveAttribute('data-storage-object-count', '0')
+  await expect(house).toHaveAttribute('data-service-count', '1')
 })

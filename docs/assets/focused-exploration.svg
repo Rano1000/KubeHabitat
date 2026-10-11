@@ -1,0 +1,122 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1100 430"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">KubeHabitat focused exploration</title>
+  <desc id="desc">
+    A cluster house shows nodes, pods and Services. Selecting a pod reveals its existing storage
+    attachment and allocation details.
+  </desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#101f33" />
+      <stop offset="1" stop-color="#172f46" />
+    </linearGradient>
+    <linearGradient id="room" x2="0" y2="1">
+      <stop stop-color="#254c64" />
+      <stop offset="1" stop-color="#152d43" />
+    </linearGradient>
+  </defs>
+  <style>
+    text {
+      font-family: system-ui, sans-serif;
+      fill: #edf7ff;
+    }
+    .muted {
+      fill: #a9c1d3;
+      font-size: 15px;
+    }
+    .caption {
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .small {
+      font-size: 14px;
+    }
+    .pod {
+      fill: #276984;
+      stroke: #82e0d3;
+      stroke-width: 2;
+    }
+    .route {
+      fill: none;
+      stroke: #79baff;
+      stroke-width: 2;
+      stroke-dasharray: 5 5;
+    }
+    .halo {
+      fill: none;
+      stroke: #83e3d1;
+      stroke-width: 3;
+      animation: focus 4s ease-in-out infinite;
+    }
+    @keyframes focus {
+      0%,
+      100% {
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .halo {
+        animation: none;
+      }
+    }
+  </style>
+  <rect width="1100" height="430" rx="24" fill="url(#bg)" />
+  <text x="36" y="44" font-size="24" font-weight="700">
+    KubeHabitat · see the cluster, then explore
+  </text>
+  <text x="36" y="72" class="muted">
+    Workflow illustration · actual identities and limits come from Kubernetes
+  </text>
+  <g transform="translate(36 104)">
+    <text x="0" y="24" class="caption">01 / Overview</text>
+    <path d="M0 80 135 42 275 80V236H0Z" fill="url(#room)" stroke="#5c97ba" stroke-width="2" />
+    <path d="M135 42V236M0 80H275" stroke="#5c97ba" />
+    <text x="18" y="105" class="small">Node A</text>
+    <text x="153" y="105" class="small">Node B</text>
+    <circle cx="55" cy="144" r="22" class="pod" />
+    <rect x="47" y="136" width="16" height="16" rx="3" fill="#afdedf" />
+    <circle cx="187" cy="144" r="22" class="pod" />
+    <rect x="179" y="136" width="16" height="16" rx="3" fill="#afdedf" />
+    <path d="M85 192 103 182 121 192V211H85Z" fill="#4d8aca" stroke="#8ec5ff" />
+    <path d="M103 184 55 167M119 192 187 167" class="route" />
+    <text x="150" y="214" class="small">Service</text>
+    <text x="0" y="267" class="muted">Nodes · namespaces · pods · Services</text>
+  </g>
+  <path d="M333 236H367M358 227 367 236 358 245" stroke="#80b3ce" fill="none" stroke-width="2" />
+  <g transform="translate(392 104)">
+    <text x="0" y="24" class="caption">02 / Select a pod</text>
+    <rect y="48" width="240" height="188" rx="15" fill="#17394d" stroke="#508ba8" />
+    <text x="18" y="76" class="small">Namespace / shop</text>
+    <circle cx="119" cy="145" r="56" class="halo" />
+    <circle cx="119" cy="145" r="45" class="pod" />
+    <rect x="91" y="132" width="23" height="25" rx="4" fill="#b2e5dd" />
+    <rect x="123" y="132" width="23" height="25" rx="4" fill="#81afd2" />
+    <text x="18" y="217" class="small">Pod / checkout · two containers</text>
+    <text x="0" y="267" class="muted">Inspect its existing attachments</text>
+  </g>
+  <path d="M656 236H690M681 227 690 236 681 245" stroke="#80b3ce" fill="none" stroke-width="2" />
+  <g transform="translate(716 104)">
+    <text x="0" y="24" class="caption">03 / Explore storage</text>
+    <rect y="48" width="348" height="188" rx="15" fill="#213b4d" stroke="#668fa7" />
+    <path d="M19 96V147C19 161 85 161 85 147V96" fill="#668bb8" stroke="#a5caff" />
+    <ellipse cx="52" cy="96" rx="33" ry="10" fill="#8fb3da" stroke="#b7d5f5" />
+    <ellipse cx="52" cy="147" rx="33" ry="10" fill="none" stroke="#a5caff" />
+    <text x="107" y="91" class="caption">Claim / checkout-data</text>
+    <text x="107" y="118" class="small">Min requested: 64 Mi</text>
+    <text x="107" y="144" class="small">Capacity: 64 Mi</text>
+    <text x="107" y="170" class="small">Max limit: not declared</text>
+    <text x="19" y="214" class="muted">Illustrative values · inspect the full ID</text>
+    <text x="0" y="267" class="muted">Pod → volume → claim → PV → class</text>
+  </g>
+  <text x="36" y="403" class="muted">
+    Read-only inspection · hidden layers keep the overview clear · no invented traffic or storage
+    usage
+  </text>
+</svg>
