@@ -72,6 +72,7 @@ test('pod actions support right-click, keyboard, issue focus and explicit contai
         resourceId: params.get('resource'),
         podUid: 'observed-uid',
         state: 'available',
+        reason: 'Bounded container-specific log snapshot',
         source: 'Kubernetes pods/log',
         observedAt: current.generatedAt,
         previous: params.get('previous') === 'true',
