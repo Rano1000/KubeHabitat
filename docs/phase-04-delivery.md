@@ -45,13 +45,14 @@ state separately from one recorded restart and an earlier exit code 255 with rea
 was followed by the Phase 05 lab: all ten real-cluster fault checks passed, including a healthy
 sibling beside a red crash-loop container and distinct scheduling, waiting, Failed and Completed
 states. The crashing container subsequently recovered in the same pod UID with its exit-42 history
-intact. See the [combined validation record](phase-05-delivery.md) for the previous-log availability
-edge case and remaining recovery rerun.
+intact. The follow-up combined lab passed ten fault checks and eleven recovery checks. See the
+[combined validation record](phase-05-delivery.md) for the previous-log availability edge case and
+verification details.
 
 ## Still open
 
 Durable failure markers after removal, confirmed controller replacement sequences, recorded incident
-replay remain open. On-demand Events/logs are now implemented in [Phase 05](phase-05-delivery.md),
-with the recovery rerun pending. Floor fragments are a visual sign of an observed Failed pod, not a
+replay remain open. On-demand Events/logs are now implemented and validated in
+[Phase 05](phase-05-delivery.md). Floor fragments are a visual sign of an observed Failed pod, not a
 retained historical object. A failed container does not break apart its still-existing pod. Read the
 [lifecycle guide](lifecycle.md) for limits.

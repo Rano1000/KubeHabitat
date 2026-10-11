@@ -1,7 +1,8 @@
 # Phase 05 · Investigation
 
-Status: **In review**. Initial on-demand investigation is implemented. Authentication, durable
-retention, streaming logs and automatic diagnosis remain outside this delivery.
+Status: **Initial delivery validated**. On-demand investigation passes the combined live lab.
+Authentication, durable retention, streaming logs and automatic diagnosis remain outside this
+delivery.
 
 ![KubeHabitat evidence workflow](assets/investigation-flow.svg)
 
@@ -40,10 +41,21 @@ The first recovery run passed ten of eleven checks. Its remaining check exposed 
 failure returned in an HTTP-success log body, also reproduced using kubectl. The follow-up
 classifies that known un-timestamped response as unavailable without exposing runtime IDs or hiding
 timestamped application messages. Go tests/vet/build and nine lab/evidence tests pass for this fix.
-A full recovery rerun against the updated running binary remains required; previous logs are no
-longer retrievable. Recovery acceptance now requires a fully passing fault report for the same UID
-before accepting explicit previous-log unavailability. It still requires current recovery logs and
-historical exit 42.
+The updated running binary correctly classified the old runtime failure as unavailable while the
+container remained Ready. The follow-up
+[GitHub workflow](https://github.com/Rano1000/KubeHabitat/actions/runs/38140193136) also passed.
+
+A fresh isolated lab cycle then passed **10/10 fault checks and 11/11 recovery checks**. Only the
+owned disposable multi-container test pod was recreated, using a UID precondition; existing
+application workloads were untouched. The new pod retained its UID throughout fault and recovery,
+with the healthy sibling staying healthy. Current recovery logs, previous failure evidence and exit
+42 history were verified together. Full-screen monitoring with its inspector was checked in the
+in-app browser using Midnight Habitat. The earlier fault panel was also inspected in Garden and
+Blueprint; a comprehensive accessibility review remains planned.
+
+Recovery acceptance requires a fully passing fault report for the same UID before accepting explicit
+previous-log unavailability. It still requires current recovery logs and historical exit 42. Local
+assertion reports contain no log bodies or event messages and are not published.
 
 ## Limits
 
