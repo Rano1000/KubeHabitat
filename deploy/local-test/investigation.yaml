@@ -1,0 +1,114 @@
+# Deliberate faults in a dedicated namespace, used only by the acceptance lab script.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: habitat-investigation
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: recovery-gate
+  namespace: habitat-investigation
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+data:
+  recover: 'no'
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: split-container
+  namespace: habitat-investigation
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+spec:
+  containers:
+    - name: healthy
+      image: busybox:1.37
+      command: [sh, -c, 'echo "Healthy sibling running"; while true; do sleep 30; done']
+      resources:
+        requests: { cpu: 5m, memory: 8Mi }
+        limits: { cpu: 50m, memory: 32Mi }
+    - name: crashing
+      image: busybox:1.37
+      command:
+        - sh
+        - -c
+        - 'if [ "$(cat /gate/recover)" != yes ]; then echo "Deliberate acceptance failure: exit 42";
+          exit 42; fi; echo "Recovered acceptance container"; while true; do sleep 30; done'
+      volumeMounts: [{ name: gate, mountPath: /gate, readOnly: true }]
+      resources:
+        requests: { cpu: 5m, memory: 8Mi }
+        limits: { cpu: 50m, memory: 32Mi }
+  volumes:
+    - name: gate
+      configMap: { name: recovery-gate }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-waiting
+  namespace: habitat-investigation
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+spec:
+  containers:
+    - name: waiting
+      image: busybox:kubehabitat-deliberately-missing-acceptance
+      resources:
+        requests: { cpu: 5m, memory: 8Mi }
+        limits: { cpu: 50m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unscheduled
+  namespace: habitat-investigation
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+spec:
+  nodeSelector:
+    kubehabitat.test/no-such-node: 'true'
+  containers:
+    - name: waiting-for-node
+      image: busybox:1.37
+      command: [sh, -c, 'sleep 3600']
+      resources:
+        requests: { cpu: 5m, memory: 8Mi }
+        limits: { cpu: 50m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: failed-task
+  namespace: habitat-investigation
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+spec:
+  restartPolicy: Never
+  containers:
+    - name: failure
+      image: busybox:1.37
+      command: [sh, -c, 'echo "Deliberate failed task: exit 17"; exit 17']
+      resources:
+        requests: { cpu: 5m, memory: 8Mi }
+        limits: { cpu: 50m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: completed-task
+  namespace: habitat-investigation
+  labels:
+    app.kubernetes.io/managed-by: kubehabitat-test-lab
+spec:
+  restartPolicy: Never
+  containers:
+    - name: success
+      image: busybox:1.37
+      command: [sh, -c, 'echo "Successful acceptance task"; exit 0']
+      resources:
+        requests: { cpu: 5m, memory: 8Mi }
+        limits: { cpu: 50m, memory: 32Mi }

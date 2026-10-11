@@ -119,6 +119,144 @@ test('lifecycle evidence distinguishes recovered container history from current 
   await expect(evidence.getByText('Current termination', { exact: true })).toBeVisible()
 })
 
+test('investigation loads UID-scoped events and previous logs only on request', async ({
+  page,
+}) => {
+  const current = snapshot()
+  let eventReads = 0,
+    logReads = 0
+  await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: current }))
+  await page.route('**/api/v1/investigation?*', (route) => {
+    eventReads++
+    const resourceId = new URL(route.request().url()).searchParams.get('resource')
+    return route.fulfill({
+      json: {
+        resourceId,
+        targetUid: 'observed-uid',
+        scope: 'shop/Pod real-worker',
+        observedAt: current.generatedAt,
+        source: 'Kubernetes API',
+        logsEnabled: true,
+        target: { state: 'available', reason: 'UID confirmed' },
+        events: {
+          state: 'available',
+          reason: 'reported',
+          limited: false,
+          items: [
+            {
+              uid: 'event',
+              type: 'Warning',
+              reason: 'BackOff',
+              message: 'Reported container retries <script>literal text</script>',
+              count: 4,
+              lastObserved: current.generatedAt,
+              fieldPath: 'spec.containers{worker}',
+            },
+          ],
+        },
+      },
+    })
+  })
+  await page.route('**/api/v1/logs?*', (route) => {
+    logReads++
+    const query = new URL(route.request().url()).searchParams
+    return route.fulfill({
+      json: {
+        resourceId: query.get('resource'),
+        podUid: 'observed-uid',
+        state: 'available',
+        reason: 'bounded',
+        source: 'Kubernetes pods/log',
+        observedAt: current.generatedAt,
+        previous: query.get('previous') === 'true',
+        text: '2026-10-11T12:00:00Z previous failed run',
+        truncated: false,
+        tailLines: 200,
+        sinceSeconds: 900,
+        byteLimit: 65536,
+      },
+    })
+  })
+  await page.goto('/#habitat')
+  await page.getByRole('button', { name: /real-worker Pod/ }).click()
+  const details = page.getByRole('complementary', { name: 'Live component details' })
+  await expect(
+    details.getByText('Shell colour: normal · container issue.', { exact: true }),
+  ).toBeVisible()
+  await details.getByRole('button', { name: 'worker', exact: true }).click()
+  expect(eventReads).toBe(0)
+  expect(logReads).toBe(0)
+  await details.getByRole('button', { name: /Investigate component/ }).click()
+  const investigation = details.getByRole('region', { name: 'Investigation', exact: true })
+  await expect(investigation.getByText('BackOff', { exact: true })).toBeVisible()
+  await expect(
+    investigation.getByText('Reported container retries <script>literal text</script>', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  expect(logReads).toBe(0)
+  await investigation.getByRole('button', { name: 'Load previous logs', exact: true }).click()
+  await expect(investigation.getByLabel('Container log text')).toContainText('previous failed run')
+  await expect(investigation.getByText('Previous run · available', { exact: true })).toBeVisible()
+  expect(logReads).toBe(1)
+  await details.getByText('Identity, placement & observation', { exact: true }).click()
+  await details.getByRole('button', { name: 'real-worker', exact: true }).click()
+  await expect(details.getByLabel('Container log text')).toHaveCount(0)
+  await details.getByRole('button', { name: /Investigate component/ }).click()
+  await expect(investigation.getByRole('button', { name: 'Load current logs' })).toHaveCount(0)
+})
+
+test('investigation separates denied events and unavailable previous logs from a healthy verdict', async ({
+  page,
+}) => {
+  const current = snapshot()
+  await page.route('**/api/v1/snapshot', (route) => route.fulfill({ json: current }))
+  await page.route('**/api/v1/investigation?*', (route) =>
+    route.fulfill({
+      json: {
+        resourceId: new URL(route.request().url()).searchParams.get('resource'),
+        targetUid: 'observed-uid',
+        scope: 'shop/Pod real-worker',
+        observedAt: current.generatedAt,
+        source: 'Kubernetes API',
+        logsEnabled: true,
+        target: { state: 'available', reason: 'UID confirmed' },
+        events: { state: 'denied', reason: 'Read access denied', limited: false, items: [] },
+      },
+    }),
+  )
+  await page.route('**/api/v1/logs?*', (route) =>
+    route.fulfill({
+      json: {
+        resourceId: new URL(route.request().url()).searchParams.get('resource'),
+        podUid: 'observed-uid',
+        state: 'unavailable',
+        reason: 'Previous logs are no longer retained.',
+        source: 'Kubernetes pods/log',
+        observedAt: current.generatedAt,
+        previous: true,
+        truncated: false,
+        tailLines: 200,
+        sinceSeconds: 900,
+        byteLimit: 65536,
+      },
+    }),
+  )
+  await page.goto('/#habitat')
+  await page.getByRole('button', { name: /real-worker Pod/ }).click()
+  const details = page.getByRole('complementary', { name: 'Live component details' })
+  await details.getByRole('button', { name: 'worker', exact: true }).click()
+  await details.getByRole('button', { name: /Investigate component/ }).click()
+  await expect(
+    details.getByText('Events denied: Read access denied', { exact: true }),
+  ).toBeVisible()
+  await details.getByRole('button', { name: 'Load previous logs' }).click()
+  await expect(
+    details.getByText('Previous logs are no longer retained.', { exact: true }),
+  ).toBeVisible()
+  await expect(details.getByLabel('Container log text')).toHaveCount(0)
+})
+
 test('API failures retain cached objects and replace health verdicts with unknown freshness', async ({
   page,
 }) => {

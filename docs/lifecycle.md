@@ -58,8 +58,9 @@ when it necessarily happened. Durable incident history and replay remain planned
 
 `CrashLoopBackOff` describes delayed retries, not a root cause. `OOMKilled` is a reported
 termination reason; it does not prove a memory leak. Suggested next checks are clearly labelled
-guidance. Events and logs remain planned for Phase 05. Kubernetes status can omit previous
-termination details; the UI says so instead of manufacturing them.
+guidance. Events and optional logs are available in the [investigation panel](investigation.md).
+Kubernetes status can omit previous termination details; the UI says so instead of manufacturing
+them.
 
 The API projects only termination reason, exit code, and reported start/finish timestamps. It does
 not expose termination messages, runtime container IDs, Pod status messages or environment values.

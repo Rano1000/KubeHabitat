@@ -1,8 +1,12 @@
 package cluster
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"io"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"sort"
 	"sync"
 	"time"
@@ -12,14 +16,17 @@ import (
 )
 
 type Store struct {
-	mu            sync.RWMutex
-	name, session string
-	revision      uint64
-	objects       map[string][]Resource
-	visibility    map[string]Visibility
-	informers     map[string]cache.SharedIndexInformer
-	metrics       Telemetry
-	usage         map[string]Usage
+	mu             sync.RWMutex
+	name, session  string
+	revision       uint64
+	objects        map[string][]Resource
+	visibility     map[string]Visibility
+	informers      map[string]cache.SharedIndexInformer
+	metrics        Telemetry
+	usage          map[string]Usage
+	evidenceClient kubernetes.Interface
+	logsEnabled    bool
+	logReader      func(context.Context, string, string, *corev1.PodLogOptions) (io.ReadCloser, error)
 }
 
 func NewStore(name string) *Store {

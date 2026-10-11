@@ -11,6 +11,116 @@
   --amber: #f5b65b;
 }
 
+.investigation-panel {
+  margin: 18px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-alt, #142231);
+  color: var(--ink, #dbe6f4);
+}
+.investigate-toggle {
+  width: 100%;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.investigate-toggle > span:first-child {
+  font-size: 24px;
+  color: var(--teal);
+}
+.investigate-toggle > span:nth-child(2) {
+  flex: 1;
+  font-weight: 600;
+}
+.investigate-toggle small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-weight: 400;
+}
+.investigation-content {
+  padding: 0 14px 14px;
+  font-size: 12px;
+}
+.investigation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.investigation-actions h4 {
+  margin: 10px 0;
+}
+.investigation-panel button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.evidence-unavailable {
+  color: var(--amber);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.event-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0;
+  max-height: 330px;
+  overflow-y: auto;
+}
+.event-timeline li {
+  border-left: 2px solid var(--teal);
+  padding: 0 0 12px 12px;
+  margin-bottom: 12px;
+}
+.event-timeline li[data-event-type='Warning'] {
+  border-color: var(--amber);
+}
+.event-timeline li > div {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.event-timeline p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  margin: 7px 0;
+}
+.event-timeline small {
+  display: block;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.log-evidence {
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+  padding-top: 8px;
+}
+.log-output {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--surface, #0b1420);
+  color: inherit;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .connection-strip {
   display: flex;
   gap: 24px;

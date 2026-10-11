@@ -42,3 +42,7 @@ artwork, not measured data or a live screenshot.
 `component-signals.svg` is original source-authored KubeHabitat artwork explaining independent
 pod-shell and container alert colours. Its gentle alert animation respects reduced motion. It
 illustrates colour rules, not measured data or a live screenshot.
+
+`investigation-flow.svg` is original source-authored KubeHabitat artwork illustrating selection,
+UID-scoped events and bounded log retrieval. Its gentle alert animation respects reduced motion. It
+is explanatory artwork, not a live screenshot or automatic diagnosis.

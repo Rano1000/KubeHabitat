@@ -47,6 +47,7 @@ does not validate a currently failing live workload; the full live fault matrix 
 ## Still open
 
 Durable failure markers after removal, confirmed controller replacement sequences, recorded incident
-replay, Events/logs, and a full live lifecycle acceptance run remain open. Floor fragments are a
-visual sign of an observed Failed pod, not a retained historical object. A failed container does not
-break apart its still-existing pod. Read the [lifecycle guide](lifecycle.md) for limits.
+replay and a full live lifecycle acceptance run remain open. On-demand Events/logs are now
+implemented in [Phase 05](phase-05-delivery.md), with combined acceptance pending. Floor fragments
+are a visual sign of an observed Failed pod, not a retained historical object. A failed container
+does not break apart its still-existing pod. Read the [lifecycle guide](lifecycle.md) for limits.

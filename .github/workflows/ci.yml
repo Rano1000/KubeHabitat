@@ -29,7 +29,7 @@ jobs:
       - name: Documentation links
         run: node scripts/check-doc-links.mjs
       - name: Local lab launcher isolation
-        run: node --test scripts/local-test-cluster.test.mjs
+        run: node --test scripts/local-test-cluster.test.mjs scripts/investigation-lab.test.mjs
       - name: Go formatting, tests, and build
         working-directory: backend
         run: |

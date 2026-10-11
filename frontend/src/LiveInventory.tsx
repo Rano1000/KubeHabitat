@@ -26,6 +26,7 @@ import { SceneBoundary } from './SceneBoundary'
 import { useMonitoringView } from './useMonitoringView'
 import { ThemeSelector, ResourceGlyph } from './themes'
 import { LifecycleEvidence } from './LifecycleEvidence'
+import { InvestigationPanel } from './InvestigationPanel'
 import { lifecycle, needsInvestigation } from './lifecycle'
 import { policyCheck } from './networkPolicy'
 import {
@@ -1091,6 +1092,11 @@ export function LiveInventory() {
                   onSelect={select}
                 />
               )}
+              <InvestigationPanel
+                key={`${snapshot?.sessionId}:${current.id}`}
+                resource={current}
+                fresh={fresh(current)}
+              />
               <details className="identity-disclosure">
                 <summary>Identity, placement &amp; observation</summary>
                 <dl>

@@ -74,6 +74,6 @@ export function suggestedCheck(resource: LiveResource) {
   if (['ImagePullBackOff', 'ErrImagePull'].includes(reason ?? ''))
     return 'Check the image reference, registry reachability and pull permissions. Secret contents are not available here.'
   if (reason === 'CrashLoopBackOff')
-    return 'Inspect the previous termination below, then investigate available logs and probe configuration outside this read-only view.'
-  return 'Review the observed conditions and container states below. Events and logs are planned for the investigation milestone.'
+    return 'Inspect the previous termination, then retrieve previous logs in the investigation panel and review probe configuration.'
+  return 'Review the observed conditions and container states, then open the investigation panel for reported events and available logs.'
 }

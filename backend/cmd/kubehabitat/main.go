@@ -24,6 +24,7 @@ func main() {
 	kubecontext := flag.String("context", "", "Optional kubeconfig context")
 	inCluster := flag.Bool("in-cluster", false, "Use the pod service account for authentication")
 	clusterName := flag.String("cluster-name", "my-cluster", "Display label, never an API server address")
+	allowLogs := flag.Bool("allow-logs", false, "Enable on-demand container log reads; requires get on pods/log")
 	flag.Parse()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -42,7 +43,8 @@ func main() {
 			log.Fatal(err)
 		}
 		store.StartMetrics(ctx, client.CoreV1().RESTClient())
-	} else if *kubeconfig != "" || *kubecontext != "" || *inCluster {
+		store.ConfigureInvestigation(client, *allowLogs)
+	} else if *kubeconfig != "" || *kubecontext != "" || *inCluster || *allowLogs {
 		log.Fatal("Kubernetes options require -live")
 	}
 	handler, err := httpapi.NewHandlerWithCluster(*staticDir, store)

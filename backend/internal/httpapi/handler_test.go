@@ -26,12 +26,36 @@ func TestDisconnectedStatusAndReadOnlyBoundary(t *testing.T) {
 		t.Fatalf("foundation must not imply live connectivity: %d %+v", w.Code, status)
 	}
 	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
-		for _, path := range []string{"/healthz", "/api/v1/status", "/api/v1/snapshot", "/"} {
+		for _, path := range []string{"/healthz", "/api/v1/status", "/api/v1/snapshot", "/api/v1/investigation", "/api/v1/logs", "/"} {
 			w = httptest.NewRecorder()
 			handler.ServeHTTP(w, httptest.NewRequest(method, path, nil))
 			if w.Code != http.StatusMethodNotAllowed {
 				t.Errorf("%s %s accepted: %d", method, path, w.Code)
 			}
+		}
+	}
+}
+
+func TestEvidenceRoutesRequireLiveAndObservedIdentity(t *testing.T) {
+	for _, route := range []string{"/api/v1/investigation", "/api/v1/logs"} {
+		disabled, _ := NewHandler("")
+		w := httptest.NewRecorder()
+		disabled.ServeHTTP(w, httptest.NewRequest("GET", route+"?resource=Pod:test", nil))
+		if w.Code != 409 {
+			t.Fatal("disabled discovery accepted evidence read")
+		}
+		handler, _ := NewHandlerWithCluster("", cluster.NewStore("test"))
+		for _, query := range []string{"", "?resource=a&resource=b", "?resource=a&previous=invalid"} {
+			w = httptest.NewRecorder()
+			handler.ServeHTTP(w, httptest.NewRequest("GET", route+query, nil))
+			if w.Code != 400 {
+				t.Fatal("invalid evidence query accepted")
+			}
+		}
+		w = httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest("GET", route+"?resource=Pod:absent", nil))
+		if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store" {
+			t.Fatal("evidence cached or missing identity invented")
 		}
 	}
 }

@@ -13,7 +13,7 @@ throughput supports estimates.
 | 02    | Read-only live Kubernetes connection              | In review |
 | 03    | Real cluster house and spatial navigation         | In review |
 | 04    | Accurate workload lifecycle animations            | In review |
-| 05    | Investigation and inspectable evidence            | Planned   |
+| 05    | Investigation and inspectable evidence            | In review |
 | 06    | Metrics, ownership, services, storage             | Planned   |
 | 07    | Optional observed traffic                         | Planned   |
 | 08    | History, scale, accessibility                     | In review |
@@ -82,6 +82,11 @@ replacements or treating completion as a crash. Pause/reduced motion preserve in
 documented.
 
 ## 05 · Investigation
+
+See the [investigation guide](investigation.md) and
+[Phase 05 delivery record](phase-05-delivery.md). On-demand events and current/previous container
+logs are implemented with explicit permissions, retention limits and UID checks. Combined live
+lifecycle acceptance remains required.
 
 Attach conditions, events, and retrievable logs. Explain confirmed symptoms, label inference, and
 show provenance/freshness.

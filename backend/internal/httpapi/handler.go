@@ -2,6 +2,7 @@
 package httpapi
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -31,6 +32,36 @@ func NewHandler(staticDir string) (http.Handler, error) {
 
 func NewHandlerWithCluster(staticDir string, store *cluster.Store) (http.Handler, error) {
 	mux := http.NewServeMux()
+	// Bound concurrent on-demand evidence reads independently of inventory polling.
+	evidenceSlots := make(chan struct{}, 4)
+	for _, route := range []string{"/api/v1/investigation", "/api/v1/logs"} {
+		mux.HandleFunc("GET "+route, func(w http.ResponseWriter, r *http.Request) {
+			if store == nil {
+				writeJSON(w, http.StatusConflict, map[string]string{"error": "Live discovery is disabled."})
+				return
+			}
+			query := r.URL.Query()
+			id := query.Get("resource")
+			if id == "" || len(id) > 1024 || len(query["resource"]) != 1 || (query.Get("previous") != "" && query.Get("previous") != "true" && query.Get("previous") != "false") {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Provide one observed resource ID and a valid previous flag."})
+				return
+			}
+			select {
+			case evidenceSlots <- struct{}{}:
+				defer func() { <-evidenceSlots }()
+			default:
+				writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "Investigation is busy; retry shortly."})
+				return
+			}
+			ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+			defer cancel()
+			if r.URL.Path == "/api/v1/logs" {
+				writeJSON(w, http.StatusOK, store.ReadLogs(ctx, id, query.Get("previous") == "true"))
+				return
+			}
+			writeJSON(w, http.StatusOK, store.Investigate(ctx, id))
+		})
+	}
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})

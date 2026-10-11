@@ -71,6 +71,8 @@ Available in this branch:
 - A live inventory and condition inspector with per-kind permissions, freshness and recovery.
 - Distinct workload lifecycle markers, current/previous termination evidence and observed container
   restart changes.
+- Independent pod/container alert colours and on-demand UID-scoped events and optional logs. See the
+  [investigation guide](docs/investigation.md).
 - Services, EndpointSlices, ingress routes and declared pod-to-pod NetworkPolicy checks.
 - Pod volumes, namespace claims, cluster volumes, storage classes and quota accounting.
 - Node CPU, memory and ephemeral storage capacity; optional Metrics API CPU/memory samples.
@@ -78,7 +80,7 @@ Available in this branch:
 
 See the [live connection guide](docs/live-connection.md) and
 [Phase 03 delivery record](docs/phase-03-delivery.md) and [lifecycle guide](docs/lifecycle.md).
-Recorded lifecycle history, investigation, traffic telemetry, history and packaging follow the
+Recorded lifecycle history, traffic telemetry, durable evidence retention and packaging follow the
 [roadmap](docs/roadmap.md).
 
 ![Read-only live discovery architecture](docs/assets/live-discovery.svg)

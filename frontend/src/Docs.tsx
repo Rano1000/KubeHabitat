@@ -2,6 +2,7 @@ import progressiveExploration from '../../docs/assets/progressive-exploration.sv
 import themeHabitats from '../../docs/assets/theme-habitats.svg'
 import lifecycleEvidence from '../../docs/assets/lifecycle-evidence.svg'
 import componentSignals from '../../docs/assets/component-signals.svg'
+import investigationFlow from '../../docs/assets/investigation-flow.svg'
 
 const phases = [
   [
@@ -37,8 +38,8 @@ const phases = [
   [
     '05',
     'Investigation',
-    'Planned',
-    'Connect visual symptoms to conditions, events, and available logs.',
+    'In review',
+    'On-demand UID-scoped events and bounded current/previous container logs. Retention and permissions are explicit.',
   ],
   [
     '06',
@@ -79,6 +80,30 @@ export function Docs() {
       </div>
       <div className="docs-grid">
         <section className="doc-card wide">
+          <span className="eyebrow">INVESTIGATION / PHASE 05</span>
+          <h2>Follow the alert to its evidence.</h2>
+          <img
+            src={investigationFlow}
+            alt="Select the affected component, inspect events for its exact UID, then request a bounded current or previous container log snapshot."
+            style={{ width: '100%' }}
+          />
+          <p>
+            Select a component and open Investigate component. Events show reported reasons, counts
+            and time for the exact object identity. Container selections share their parent pod’s
+            events, with field paths when reported.
+          </p>
+          <p>
+            Choose a specific container to load current or previous logs. Reads are on request,
+            limited to 200 lines from the last 15 minutes and 64 KiB. Enable backend log access with
+            -allow-logs and namespace-scoped pods/log permission. Missing or rotated evidence stays
+            explicit.
+          </p>
+          <p>
+            These are evidence snapshots. Refresh for new observations. Suggested checks are
+            guidance; no automatic root cause is asserted.
+          </p>
+        </section>
+        <section className="doc-card wide">
           <span className="eyebrow">COMPONENT ALERTS / POD AND CONTAINER</span>
           <h2>Find the affected component.</h2>
           <img
@@ -112,8 +137,8 @@ export function Docs() {
           </p>
           <p>
             Floor fragments mark a currently observed failed pod. The last 20 browser activity
-            entries include container state and restart changes; durable incident replay, Events and
-            logs remain planned.
+            entries include container state and restart changes. Events and logs are available on
+            request in the investigation panel; durable incident replay remains planned.
           </p>
         </section>
         <section className="doc-card wide">
@@ -250,7 +275,7 @@ export function Docs() {
           <p>
             Habitat uses real observations. Unknown freshness pauses healthy motion. Network lines
             show configuration; policy colors do not certify reachability. Filesystem usage, traffic
-            telemetry, failure history and automatic diagnosis are not implemented.
+            telemetry, durable failure history and automatic diagnosis are not implemented.
           </p>
         </section>
         <section className="doc-card wide">
